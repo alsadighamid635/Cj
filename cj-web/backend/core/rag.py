@@ -43,27 +43,31 @@ class RAGPipeline:
         # 2. Search all vector collections
         hits = vectorstore.search_all(text)
 
-        # 3. Generate response from hits
-        response_text, confidence, sources = build_response(text, hits)
+        # 3. Fetch recent conversation history for LLM context
+        recent = self.db.get_messages(session_id, limit=6)
+        history = [{"role": m["role"], "content": m["content"]} for m in recent]
 
-        # 4. If no answer AND not cybersecurity → politely decline
+        # 4. Generate response (LLM + RAG context)
+        response_text, confidence, sources = build_response(text, hits, history)
+
+        # 5. If no answer AND not cybersecurity → politely decline
         if confidence == "low" and not is_cybersecurity_related(text):
             reply = out_of_scope_reply(text)
             self.db.save_message(session_id, "user", text)
             self.db.save_message(session_id, "assistant", reply, confidence="low")
             return ChatResponse(text=reply, confidence="low", in_scope=False)
 
-        # 5. Record unanswered cybersecurity questions for future learning
+        # 6. Record unanswered cybersecurity questions for future learning
         if confidence == "low":
             self.db.save_unanswered(session_id, text)
 
-        # 6. Persist to DB
+        # 7. Persist to DB
         self.db.save_message(session_id, "user", text)
         self.db.save_message(session_id, "assistant", response_text,
                              confidence=confidence,
                              sources=json.dumps(sources))
 
-        # 7. Store this Q&A turn in chat memory for future context
+        # 8. Store this Q&A turn in chat memory for future context
         if confidence == "high":
             _store_chat_memory(session_id, text, response_text)
 

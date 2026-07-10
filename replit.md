@@ -36,6 +36,15 @@ cj-web/
       api.js         # Fetch helpers for /api/*
 ```
 
+## LLM Integration
+
+- **Provider**: Groq (`llama-3.3-70b-versatile`) — requires `GROQ_API_KEY` secret
+- Groq is called in `cj-web/backend/core/generator.py` → `build_response()`
+- Retrieved RAG chunks are injected as `## CONTEXT` into the system prompt
+- Last 6 conversation turns are passed as message history for multi-turn awareness
+- Language auto-detected (Arabic/English) — system prompt switches accordingly
+- Falls back to direct chunk formatting if Groq is unavailable
+
 ## Notes
 
 - The backend seeds 60 built-in Q&A entries into ChromaDB on first startup (from `cj-ai/knowledge/knowledge.json` if present; the app skips seeding gracefully if the file is missing).

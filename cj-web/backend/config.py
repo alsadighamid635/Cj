@@ -12,6 +12,13 @@ COLLECTION_KNOWLEDGE = "cybersec_knowledge"
 COLLECTION_SOURCES   = "cybersec_sources"
 COLLECTION_CHAT      = "chat_memory"
 
+# LLM (Groq)
+import os
+LLM_MODEL        = "llama-3.3-70b-versatile"
+LLM_MAX_TOKENS   = 1024
+LLM_TEMPERATURE  = 0.4
+GROQ_API_KEY     = os.environ.get("GROQ_API_KEY", "")
+
 # Similarity thresholds (ChromaDB cosine distance: 0=identical, 2=opposite)
 DIST_HIGH  = 0.55   # confident direct answer
 DIST_MED   = 0.90   # partial / related answer
