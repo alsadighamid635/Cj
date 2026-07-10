@@ -1,3 +1,13 @@
+"""
+Learning-sources API endpoints.
+
+GET    /api/sources              — list all configured sources
+POST   /api/sources              — add a new RSS feed or web page
+DELETE /api/sources/{id}         — remove a source and its vectors
+PATCH  /api/sources/{id}/toggle  — enable or disable a source
+POST   /api/sources/refresh      — trigger an immediate scraping run
+"""
+
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 

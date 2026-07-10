@@ -1,3 +1,10 @@
+"""
+Centralised logger for CJ-AI Web.
+
+All modules call get_logger() to obtain the shared 'cj_web' logger.
+setup_logger() is called once at startup (main.py) to attach handlers.
+"""
+
 import logging
 import sys
 from pathlib import Path

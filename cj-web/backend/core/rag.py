@@ -1,6 +1,12 @@
 """
-RAG pipeline: the main brain of CJ-AI Web.
-Handles a user query end-to-end.
+RAG (Retrieval-Augmented Generation) pipeline — the core of CJ-AI Web.
+
+Query flow:
+  1. Shell-reference lookup  — instant answers for known security tools
+  2. Vector search           — retrieve relevant chunks from Qdrant
+  3. LLM generation          — Groq Llama produces the final answer with context
+  4. Scope guard             — out-of-scope questions are politely declined
+  5. Persistence             — Q&A saved to SQLite and chat memory to Qdrant
 """
 
 import json

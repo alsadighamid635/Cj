@@ -1,3 +1,15 @@
+"""
+SQLite persistence layer for CJ-AI Web.
+
+Tables:
+  sessions      — chat sessions (id, title, created_at)
+  messages      — individual messages per session
+  sources       — RSS feeds and web pages to scrape
+  unanswered    — cybersecurity questions with no confident answer
+  learning_log  — history of scraping runs
+"""
+
+import json
 import sqlite3
 from pathlib import Path
 from datetime import datetime
@@ -113,12 +125,11 @@ class Database:
         result = []
         for r in reversed(rows):
             msg = dict(r)
-            # sources is stored as JSON string — deserialise it for the API response
-            import json as _json
+            # sources is stored as a JSON string — deserialise before returning
             raw = msg.get("sources", "[]")
             try:
-                msg["sources"] = _json.loads(raw) if isinstance(raw, str) else raw
-            except Exception:
+                msg["sources"] = json.loads(raw) if isinstance(raw, str) else raw
+            except (ValueError, TypeError):
                 msg["sources"] = []
             result.append(msg)
         return result

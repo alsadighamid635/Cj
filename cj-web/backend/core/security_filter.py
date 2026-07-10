@@ -1,3 +1,10 @@
+"""
+Scope guard for CJ-AI.
+
+Checks whether a user question is cybersecurity-related using a keyword list.
+Out-of-scope questions receive a polite decline in the user's language.
+"""
+
 from config import CYBERSECURITY_KEYWORDS
 from utils.text import normalize
 

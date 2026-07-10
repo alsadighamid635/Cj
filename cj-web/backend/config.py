@@ -3,19 +3,20 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
-CHROMA_DIR = DATA_DIR / "chroma"
-DB_FILE = DATA_DIR / "cj_web.db"
-KNOWLEDGE_FILE = BASE_DIR.parent.parent / "cj-ai" / "knowledge" / "knowledge.json"
+DB_FILE  = DATA_DIR / "cj_web.db"
 LOG_FILE = DATA_DIR / "app.log"
 
-# Qdrant Cloud
+# Path to the seeded Q&A knowledge base (shared with cj-ai CLI)
+KNOWLEDGE_FILE = BASE_DIR.parent.parent / "cj-ai" / "knowledge" / "knowledge.json"
+
+# Qdrant Cloud — credentials loaded from environment secrets
 QDRANT_URL     = os.environ.get("QDRANT_URL", "")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "")
 
-# Vector collections (shared names used by both ChromaDB legacy and Qdrant)
-COLLECTION_KNOWLEDGE = "cybersec_knowledge"
-COLLECTION_SOURCES   = "cybersec_sources"
-COLLECTION_CHAT      = "chat_memory"
+# Qdrant collection names
+COLLECTION_KNOWLEDGE = "cybersec_knowledge"   # seeded Q&A pairs
+COLLECTION_SOURCES   = "cybersec_sources"     # articles from RSS / web scraping
+COLLECTION_CHAT      = "chat_memory"          # recent conversation turns
 
 # LLM (Groq)
 LLM_MODEL        = "llama-3.3-70b-versatile"

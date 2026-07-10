@@ -1,6 +1,6 @@
 """
-Seeds ChromaDB with the Q&A knowledge base from cj-ai/knowledge/knowledge.json.
-Runs once at startup if the collection is empty.
+Seeds Qdrant with the Q&A knowledge base from cj-ai/knowledge/knowledge.json.
+Called once at startup; skips silently if the collection is already populated.
 """
 
 import json
@@ -46,4 +46,4 @@ def seed_knowledge(path: Path = config.KNOWLEDGE_FILE):
         })
 
     vectorstore.add_documents(config.COLLECTION_KNOWLEDGE, ids, docs, metas)
-    logger.info("Seeded %d Q&A entries into ChromaDB.", len(ids))
+    logger.info("Seeded %d Q&A entries into Qdrant.", len(ids))

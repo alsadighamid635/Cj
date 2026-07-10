@@ -5,7 +5,7 @@ export default function Sidebar({
     <aside className={`sidebar ${open ? "" : "closed"}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <span className="sidebar-logo-icon">⚡</span>
+          <img src="/logo.jpg" alt="249shadow" className="sidebar-logo-icon" />
           <span className="sidebar-logo-text">CJ-AI</span>
         </div>
       </div>

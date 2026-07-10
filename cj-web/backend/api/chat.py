@@ -1,3 +1,12 @@
+"""
+Chat API endpoints.
+
+POST /api/chat            — send a message, get an AI response
+GET  /api/chat/history/{session_id} — fetch message history for a session
+GET  /api/chat/sessions   — list all sessions
+DELETE /api/chat/session/{session_id} — delete a session and its messages
+"""
+
 import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel

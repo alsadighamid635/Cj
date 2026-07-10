@@ -1,3 +1,9 @@
+"""
+Admin / stats API endpoints.
+
+GET /api/admin/stats — combined DB and vector-store statistics
+"""
+
 from fastapi import APIRouter
 from core import vectorstore
 import config

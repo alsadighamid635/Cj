@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     db.initialize()
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Seed built-in knowledge into ChromaDB (runs only if empty)
+    # Seed built-in Q&A knowledge into Qdrant (runs only if collection is empty)
     seeder.seed_knowledge()
 
     # Seed default RSS sources into DB if not already present

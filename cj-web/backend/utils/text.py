@@ -1,3 +1,12 @@
+"""
+Text utility helpers shared across the backend.
+
+  normalize(text)            — lowercase, strip diacritics, collapse whitespace
+  chunk_text(text, ...)      — split long text into overlapping chunks for embedding
+  is_arabic(text)            — detect Arabic-dominant text (for bilingual responses)
+  clean_html(html)           — strip HTML tags and decode common entities
+"""
+
 import re
 import unicodedata
 

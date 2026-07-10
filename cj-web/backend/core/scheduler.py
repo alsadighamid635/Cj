@@ -1,5 +1,8 @@
 """
-APScheduler background job: fetch all enabled sources every N hours.
+Background scheduler for automatic knowledge acquisition.
+
+Runs a scraping pass over all enabled sources every SCRAPER_INTERVAL_HOURS hours.
+Can also be triggered on-demand via trigger_now() from the sources API.
 """
 
 from apscheduler.schedulers.background import BackgroundScheduler

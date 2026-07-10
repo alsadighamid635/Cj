@@ -1,6 +1,7 @@
 """
 RSS and webpage scraper for automatic knowledge acquisition.
-Stores scraped content as chunked documents in ChromaDB.
+Fetches articles from configured sources, splits them into chunks,
+and stores them in the Qdrant 'cybersec_sources' collection.
 """
 
 import hashlib
