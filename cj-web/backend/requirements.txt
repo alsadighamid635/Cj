@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+chromadb
+feedparser
+beautifulsoup4
+requests
+apscheduler
+python-multipart
+pydantic

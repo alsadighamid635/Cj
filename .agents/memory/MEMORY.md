@@ -1,1 +1,2 @@
 - [CJ-AI routing order](cj-ai-routing.md) — KB/command lookup must happen BEFORE the scope filter, or valid KB entries get wrongly rejected.
+- [CJ-AI Web stack](cj-web-stack.md) — FastAPI+ChromaDB backend on port 8000, React+Vite frontend on port 5173 (proxies /api to backend).
