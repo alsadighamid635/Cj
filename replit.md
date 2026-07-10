@@ -1,16 +1,17 @@
-# Cj
+# CJ-AI — Cybersecurity AI Assistant
 
-ذكاء اصطناعي متخصص في أمن المعلومات  
-An AI specialized in information security.
-
-## Project Status
-
-The repository is currently empty — code will be added manually by the user.
-
-## User Preferences
-
-<!-- Add any preferences or conventions here as the project grows -->
+A terminal-based AI assistant specialized in cybersecurity and information security. Built in Python, runs in any terminal (Linux, Kali, Termux).
 
 ## How to Run
 
-_To be filled in once code is added._
+```bash
+cd cj-ai
+python main.py
+```
+
+## User Preferences
+
+- Project language: Python only, terminal-based (no GUI).
+- Runs on Linux and Termux.
+- No offensive/attack capabilities — educational and defensive only.
+- Bilingual: English and Arabic.

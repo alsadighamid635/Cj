@@ -1,0 +1,4 @@
+{
+  "_note": "This file contains questions that have been reviewed and are pending addition to knowledge.json. Use core/knowledge_loader.py -> append_entry() to add them programmatically.",
+  "pending": []
+}

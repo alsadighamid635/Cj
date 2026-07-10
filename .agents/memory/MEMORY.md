@@ -1,0 +1,1 @@
+- [CJ-AI routing order](cj-ai-routing.md) — KB/command lookup must happen BEFORE the scope filter, or valid KB entries get wrongly rejected.

@@ -1,0 +1,364 @@
+{
+  "entries": [
+    {
+      "id": 1,
+      "question": "What is cybersecurity?",
+      "answer": "Cybersecurity is the practice of protecting systems, networks, and programs from digital attacks, unauthorized access, damage, or theft. It encompasses technologies, processes, and practices designed to protect computers, servers, mobile devices, electronic systems, networks, and data from malicious attacks.\n\nKey domains include:\n  • Network Security\n  • Application Security\n  • Information Security\n  • Operational Security\n  • Disaster Recovery / Business Continuity\n  • End-user Education\n\nCybersecurity is often divided into offensive (Red Team / penetration testing) and defensive (Blue Team / SOC) disciplines.",
+      "tags": ["cybersecurity", "basics", "introduction"]
+    },
+    {
+      "id": 2,
+      "question": "What is information security?",
+      "answer": "Information Security (InfoSec) is the practice of protecting information from unauthorized access, use, disclosure, disruption, modification, or destruction. It is built on the CIA Triad:\n\n  • Confidentiality — ensuring information is accessible only to authorized parties.\n  • Integrity — ensuring data is accurate and hasn't been tampered with.\n  • Availability — ensuring authorized users can access information when needed.\n\nAdditional principles include: Authentication, Authorization, Non-repudiation, and Accountability.",
+      "tags": ["information security", "cia triad", "basics"]
+    },
+    {
+      "id": 3,
+      "question": "What is penetration testing?",
+      "answer": "Penetration testing (pen testing) is an authorized simulated cyberattack on a system, network, or application to discover exploitable vulnerabilities before real attackers do.\n\nPhases of a penetration test:\n  1. Reconnaissance — gather information about the target.\n  2. Scanning — identify open ports, services, and vulnerabilities.\n  3. Exploitation — attempt to exploit discovered vulnerabilities.\n  4. Post-Exploitation — assess the impact and escalate privileges.\n  5. Reporting — document findings and provide remediation advice.\n\nTypes:\n  • Black Box — tester has no prior knowledge of the target.\n  • White Box — tester has full knowledge (source code, architecture).\n  • Gray Box — tester has partial knowledge.\n\nPenetration testing must always be authorized in writing before beginning.",
+      "tags": ["penetration testing", "pentest", "methodology"]
+    },
+    {
+      "id": 4,
+      "question": "What is the CIA triad?",
+      "answer": "The CIA Triad is the foundational model of information security:\n\n  • Confidentiality — Only authorized users can access the information. Enforced by encryption, access controls, and authentication.\n\n  • Integrity — Data must be accurate and unmodified. Enforced by hashing, digital signatures, and checksums.\n\n  • Availability — Systems and data must be accessible to authorized users when needed. Enforced by redundancy, backups, and DDoS protection.\n\nExample: A banking system must keep account data confidential, ensure balances are not tampered with (integrity), and ensure the system is online 24/7 (availability).",
+      "tags": ["CIA", "confidentiality", "integrity", "availability", "basics"]
+    },
+    {
+      "id": 5,
+      "question": "What is SQL injection?",
+      "answer": "SQL Injection (SQLi) is a web security vulnerability that allows an attacker to interfere with the queries that an application makes to its database.\n\nHow it works:\n  An application takes user input and builds a SQL query without proper sanitization:\n    SELECT * FROM users WHERE username = 'admin' AND password = 'INPUT'\n  An attacker inputs: ' OR '1'='1\n  The query becomes: SELECT * FROM users WHERE username = 'admin' AND password = '' OR '1'='1'\n  This always returns true, bypassing authentication.\n\nTypes of SQLi:\n  • In-band SQLi (Error-based, Union-based)\n  • Blind SQLi (Boolean-based, Time-based)\n  • Out-of-band SQLi\n\nPrevention:\n  • Use parameterized queries (prepared statements)\n  • Use an ORM\n  • Validate and sanitize all user input\n  • Apply principle of least privilege to DB accounts\n  • Use WAF (Web Application Firewall)",
+      "tags": ["OWASP", "SQL injection", "web security", "SQLi"]
+    },
+    {
+      "id": 6,
+      "question": "What is XSS cross-site scripting?",
+      "answer": "Cross-Site Scripting (XSS) is a client-side code injection attack where an attacker injects malicious scripts (usually JavaScript) into web pages viewed by other users.\n\nTypes:\n  • Stored XSS — malicious script is stored on the server (e.g., in a database) and executed when another user visits the page.\n  • Reflected XSS — script is embedded in a URL and reflected back to the user via the server response.\n  • DOM-based XSS — script is executed by modifying the DOM in the victim's browser.\n\nImpact: session hijacking, credential theft, malware distribution, defacement.\n\nPrevention:\n  • Encode output (HTML entity encoding)\n  • Use Content Security Policy (CSP) headers\n  • Validate and sanitize all input\n  • Use HTTPOnly and Secure cookie flags\n  • Use modern frameworks that auto-escape output",
+      "tags": ["XSS", "OWASP", "web security", "cross-site scripting"]
+    },
+    {
+      "id": 7,
+      "question": "What is OWASP Top 10?",
+      "answer": "The OWASP Top 10 is a standard awareness document representing the most critical web application security risks. The 2021 edition:\n\n  1. A01 — Broken Access Control\n  2. A02 — Cryptographic Failures\n  3. A03 — Injection (SQLi, XSS, etc.)\n  4. A04 — Insecure Design\n  5. A05 — Security Misconfiguration\n  6. A06 — Vulnerable and Outdated Components\n  7. A07 — Identification and Authentication Failures\n  8. A08 — Software and Data Integrity Failures\n  9. A09 — Security Logging and Monitoring Failures\n  10. A10 — Server-Side Request Forgery (SSRF)\n\nOWASP (Open Web Application Security Project) is a non-profit foundation providing free resources for web security.\nWebsite: https://owasp.org",
+      "tags": ["OWASP", "web security", "top 10", "vulnerabilities"]
+    },
+    {
+      "id": 8,
+      "question": "What is a firewall?",
+      "answer": "A firewall is a network security device (hardware or software) that monitors and controls incoming and outgoing network traffic based on predefined security rules.\n\nTypes of Firewalls:\n  • Packet Filtering Firewall — inspects packets at the network layer based on source/destination IP, port, and protocol.\n  • Stateful Inspection Firewall — tracks the state of active connections and makes decisions based on context.\n  • Application Layer (Proxy) Firewall — inspects traffic at the application layer (HTTP, FTP, DNS).\n  • Next-Generation Firewall (NGFW) — combines traditional firewall with DPI, IPS, and application awareness.\n  • Web Application Firewall (WAF) — protects web applications from HTTP attacks (SQLi, XSS, etc.).\n\nCommon tools:\n  • iptables / nftables (Linux)\n  • ufw (Ubuntu)\n  • Windows Defender Firewall\n  • pfSense, Cisco ASA, Palo Alto",
+      "tags": ["firewall", "network security", "iptables", "WAF"]
+    },
+    {
+      "id": 9,
+      "question": "What is an IDS and IPS?",
+      "answer": "IDS (Intrusion Detection System) — monitors network or system activity for malicious events and generates alerts. It does NOT block traffic.\n\nIPS (Intrusion Prevention System) — monitors like an IDS, but can also actively block or prevent detected threats.\n\nTypes:\n  • NIDS/NIPS — Network-based, monitors network traffic.\n  • HIDS/HIPS — Host-based, monitors a single host's activity.\n\nDetection Methods:\n  • Signature-based — matches known attack patterns.\n  • Anomaly-based — detects deviations from normal behavior.\n  • Policy-based — detects policy violations.\n\nPopular tools:\n  • Snort — open-source NIDS/IPS\n  • Suricata — multi-threaded IDS/IPS\n  • OSSEC — open-source HIDS\n  • Zeek (Bro) — network analysis framework",
+      "tags": ["IDS", "IPS", "Snort", "Suricata", "intrusion detection", "network security"]
+    },
+    {
+      "id": 10,
+      "question": "What is cryptography?",
+      "answer": "Cryptography is the science of securing information through encoding, so only authorized parties can read it.\n\nKey concepts:\n  • Symmetric Encryption — same key for encryption and decryption.\n    Examples: AES, DES, 3DES, ChaCha20\n\n  • Asymmetric Encryption — public key for encryption, private key for decryption.\n    Examples: RSA, ECC, ElGamal\n\n  • Hash Functions — one-way functions that produce a fixed-size digest.\n    Examples: SHA-256, SHA-3, MD5 (broken), bcrypt\n\n  • Digital Signatures — verify authenticity and integrity of a message.\n\n  • Public Key Infrastructure (PKI) — manages digital certificates and keys.\n\n  • TLS/SSL — cryptographic protocol for securing network communications.\n\nGolden rule: never implement your own cryptography — use established, peer-reviewed libraries.",
+      "tags": ["cryptography", "encryption", "AES", "RSA", "hash", "TLS", "SSL"]
+    },
+    {
+      "id": 11,
+      "question": "What is AES encryption?",
+      "answer": "AES (Advanced Encryption Standard) is a symmetric block cipher adopted by NIST in 2001. It is the most widely used encryption standard in the world.\n\nKey characteristics:\n  • Block size: 128 bits\n  • Key sizes: 128, 192, or 256 bits\n  • Structure: Substitution-Permutation Network (SPN)\n\nModes of operation:\n  • ECB — Electronic Codebook (insecure, do not use)\n  • CBC — Cipher Block Chaining (requires IV)\n  • CTR — Counter Mode (stream cipher behavior)\n  • GCM — Galois/Counter Mode (authenticated encryption, recommended)\n\nIn Python:\n  from Crypto.Cipher import AES\n  cipher = AES.new(key, AES.MODE_GCM)\n  ciphertext, tag = cipher.encrypt_and_digest(plaintext)\n\nUse AES-256-GCM for modern secure applications.",
+      "tags": ["AES", "cryptography", "encryption", "symmetric"]
+    },
+    {
+      "id": 12,
+      "question": "What is RSA?",
+      "answer": "RSA (Rivest–Shamir–Adleman) is an asymmetric encryption algorithm widely used for secure data transmission and digital signatures.\n\nHow it works:\n  1. Generate two large prime numbers (p and q).\n  2. Compute n = p × q (modulus).\n  3. Public key = (n, e), Private key = (n, d).\n  4. Encryption: ciphertext = plaintext^e mod n\n  5. Decryption: plaintext = ciphertext^d mod n\n\nSecurity: Based on the difficulty of factoring large numbers.\n\nKey sizes:\n  • 1024 bits — considered weak/broken.\n  • 2048 bits — current minimum.\n  • 4096 bits — recommended for long-term security.\n\nCommon uses: TLS handshake, SSH key authentication, email signing (PGP).\n\nIn practice, RSA is used to encrypt a symmetric key (like AES), which is then used for bulk data encryption — this is called hybrid encryption.",
+      "tags": ["RSA", "cryptography", "asymmetric", "public key"]
+    },
+    {
+      "id": 13,
+      "question": "What is hashing? What are hash functions?",
+      "answer": "A hash function takes an input of any size and produces a fixed-size output (hash / digest). Hash functions are one-way — you cannot reverse the hash to get the original input.\n\nProperties of a good hash function:\n  • Deterministic — same input always produces same output.\n  • Fast computation.\n  • Avalanche effect — small change in input causes large change in output.\n  • Pre-image resistance — cannot find input from hash.\n  • Collision resistance — cannot find two inputs with the same hash.\n\nCommon hash algorithms:\n  • MD5 (128-bit) — broken, do not use for security.\n  • SHA-1 (160-bit) — deprecated, broken for collision resistance.\n  • SHA-256 / SHA-512 — secure, part of SHA-2 family.\n  • SHA-3 — newer standard, different internal structure (Keccak).\n  • bcrypt / scrypt / Argon2 — password hashing (intentionally slow).\n\nUses: password storage, data integrity, digital signatures, checksums.\n\nImportant: always use salted hashing for passwords (bcrypt, Argon2).",
+      "tags": ["hash", "SHA", "MD5", "bcrypt", "cryptography"]
+    },
+    {
+      "id": 14,
+      "question": "What is malware?",
+      "answer": "Malware (malicious software) is any software designed to disrupt, damage, or gain unauthorized access to computer systems.\n\nTypes of malware:\n  • Virus — attaches to legitimate files and spreads when the file is executed.\n  • Worm — self-replicates across networks without needing a host file.\n  • Trojan Horse — disguises itself as legitimate software; provides backdoor access.\n  • Ransomware — encrypts victim's files and demands payment for decryption.\n  • Spyware — collects user data without their knowledge.\n  • Adware — displays unwanted advertisements; can also spy.\n  • Rootkit — hides its presence deep in the OS (kernel level).\n  • Keylogger — records keystrokes to capture credentials.\n  • Botnet — network of infected machines controlled by an attacker (C2 server).\n  • Backdoor — provides persistent unauthorized access to a system.\n  • Fileless Malware — operates in memory without writing to disk.\n\nAnalysis approaches:\n  • Static Analysis — examine the file without executing it.\n  • Dynamic Analysis — execute in a sandbox and observe behavior.",
+      "tags": ["malware", "virus", "ransomware", "trojan", "malware analysis"]
+    },
+    {
+      "id": 15,
+      "question": "What is ransomware?",
+      "answer": "Ransomware is a type of malware that encrypts the victim's files and demands a ransom (usually in cryptocurrency) in exchange for the decryption key.\n\nHow ransomware typically works:\n  1. Initial access (phishing, RDP brute force, drive-by download).\n  2. Lateral movement across the network.\n  3. Reconnaissance — identify valuable data.\n  4. Data exfiltration (in double-extortion attacks).\n  5. Encryption of files with a strong algorithm (AES + RSA).\n  6. Ransom note displayed to victim.\n\nNotable examples:\n  • WannaCry (2017) — exploited EternalBlue (MS17-010) on SMB.\n  • NotPetya (2017) — destructive ransomware-wiper.\n  • REvil, LockBit, Conti — modern ransomware-as-a-service (RaaS) groups.\n\nProtection:\n  • Regular offline backups (3-2-1 backup rule).\n  • Keep systems patched.\n  • Network segmentation.\n  • EDR/antivirus solutions.\n  • Principle of least privilege.\n  • Multi-factor authentication.",
+      "tags": ["ransomware", "malware", "WannaCry", "encryption", "incident response"]
+    },
+    {
+      "id": 16,
+      "question": "What is social engineering?",
+      "answer": "Social engineering is the psychological manipulation of people into performing actions or divulging confidential information, bypassing technical security controls.\n\nCommon techniques:\n  • Phishing — fraudulent emails that appear to come from trusted sources to steal credentials or deliver malware.\n  • Spear Phishing — targeted phishing against a specific person or organization.\n  • Vishing — voice phishing over the phone.\n  • Smishing — phishing via SMS text messages.\n  • Pretexting — creating a fabricated scenario to extract information.\n  • Baiting — leaving infected USB drives in public places.\n  • Quid Pro Quo — offering a service in exchange for information.\n  • Tailgating / Piggybacking — physical access by following an authorized person.\n\nDefenses:\n  • Security awareness training.\n  • Verify identity before sharing sensitive information.\n  • Implement strict access control policies.\n  • Report suspicious emails or calls to security team.",
+      "tags": ["social engineering", "phishing", "vishing", "smishing", "human factor"]
+    },
+    {
+      "id": 17,
+      "question": "What is phishing?",
+      "answer": "Phishing is a type of social engineering attack where attackers send fraudulent messages (usually emails) that appear to come from reputable sources to trick victims into revealing sensitive information or installing malware.\n\nVariants:\n  • Spear Phishing — targeted, personalized phishing.\n  • Whaling — targeting high-profile executives (C-suite).\n  • Clone Phishing — copying a legitimate email and replacing a link with a malicious one.\n  • Business Email Compromise (BEC) — impersonating executives to authorize wire transfers.\n\nIndicators of phishing:\n  • Misspelled domain names (paypa1.com vs paypal.com).\n  • Urgent language ('Act immediately or your account will be closed').\n  • Suspicious attachments (.exe, .js, .docm files).\n  • Generic greetings ('Dear Customer').\n  • Mismatched URLs on hover.\n\nDefenses:\n  • Email filtering (SPF, DKIM, DMARC).\n  • Multi-factor authentication.\n  • Security awareness training.\n  • Report phishing via PhishTank or your security team.",
+      "tags": ["phishing", "social engineering", "email security", "BEC"]
+    },
+    {
+      "id": 18,
+      "question": "What is privilege escalation?",
+      "answer": "Privilege escalation is the act of exploiting a vulnerability or misconfiguration to gain higher-level permissions than originally granted.\n\nTypes:\n  • Vertical Privilege Escalation — gaining higher privileges (e.g., regular user → root/admin).\n  • Horizontal Privilege Escalation — accessing resources of another user with the same privilege level.\n\nCommon Linux privesc techniques:\n  • Exploiting SUID/SGID binaries.\n  • Abusing sudo misconfigurations (sudo -l).\n  • Writable cron jobs running as root.\n  • Kernel exploits (Dirty COW, etc.).\n  • PATH manipulation.\n  • Weak file permissions on sensitive files.\n\nCommon Windows privesc techniques:\n  • Unquoted service paths.\n  • Weak service permissions.\n  • AlwaysInstallElevated registry key.\n  • Token impersonation (Potato attacks).\n  • DLL hijacking.\n\nUseful Linux privesc check:\n  find / -perm -u=s -type f 2>/dev/null\n  sudo -l",
+      "tags": ["privilege escalation", "Linux", "Windows", "SUID", "sudo"]
+    },
+    {
+      "id": 19,
+      "question": "What is a VPN?",
+      "answer": "A VPN (Virtual Private Network) creates an encrypted tunnel between your device and a VPN server, securing your internet traffic and masking your IP address.\n\nHow it works:\n  1. Your device connects to a VPN server and authenticates.\n  2. All traffic is encrypted using protocols like OpenVPN, WireGuard, or IKEv2.\n  3. Traffic exits from the VPN server's IP address — your real IP is hidden.\n\nVPN Protocols:\n  • OpenVPN — widely used, open-source, highly configurable.\n  • WireGuard — modern, fast, minimal codebase.\n  • IKEv2/IPSec — fast, stable, used in mobile VPNs.\n  • L2TP/IPSec — older, less secure.\n  • PPTP — obsolete and insecure.\n\nSecurity uses:\n  • Protect traffic on public Wi-Fi.\n  • Remote access to corporate networks.\n  • Bypass geo-restrictions.\n  • Site-to-site connectivity between offices.\n\nLimitations:\n  • VPN does not make you fully anonymous.\n  • The VPN provider can see your traffic.\n  • Does not protect against malware or phishing.",
+      "tags": ["VPN", "network security", "encryption", "OpenVPN", "WireGuard"]
+    },
+    {
+      "id": 20,
+      "question": "What is a SIEM?",
+      "answer": "SIEM (Security Information and Event Management) is a system that aggregates and analyzes security event data from across an organization in real time.\n\nCore functions:\n  • Log collection — gather logs from firewalls, servers, endpoints, applications.\n  • Correlation — detect patterns across multiple events from different sources.\n  • Alerting — notify analysts of suspicious activity.\n  • Forensics — provide historical log data for incident investigation.\n  • Compliance reporting — demonstrate regulatory compliance.\n\nPopular SIEM platforms:\n  • Splunk — powerful commercial SIEM with extensive app ecosystem.\n  • IBM QRadar — enterprise SIEM with advanced correlation.\n  • Microsoft Sentinel — cloud-native SIEM on Azure.\n  • Elastic SIEM — open-source based on the Elastic Stack (ELK).\n  • Wazuh — free, open-source security monitoring platform.\n  • Graylog — open-source log management.\n\nSIEM is central to a SOC (Security Operations Center) workflow.",
+      "tags": ["SIEM", "SOC", "Splunk", "logging", "security monitoring"]
+    },
+    {
+      "id": 21,
+      "question": "What is a SOC security operations center?",
+      "answer": "A SOC (Security Operations Center) is a centralized unit within an organization responsible for monitoring, detecting, analyzing, and responding to cybersecurity incidents.\n\nSOC Team Roles:\n  • Tier 1 Analyst — monitors alerts, triages events, escalates confirmed threats.\n  • Tier 2 Analyst — deep investigation and incident response.\n  • Tier 3 Analyst / Threat Hunter — proactive threat hunting, complex forensics.\n  • SOC Manager — oversees team operations and reporting.\n  • Incident Responder — leads response during active incidents.\n\nCore tools used in a SOC:\n  • SIEM (Splunk, Sentinel, Elastic)\n  • EDR (CrowdStrike, Carbon Black, SentinelOne)\n  • Threat Intelligence Platforms\n  • SOAR (Security Orchestration, Automation, and Response)\n  • Ticketing systems (TheHive, Jira)\n\nKey metrics:\n  • MTTD — Mean Time to Detect\n  • MTTR — Mean Time to Respond\n  • Alert volume and false-positive rate",
+      "tags": ["SOC", "security operations", "incident response", "SIEM", "analyst"]
+    },
+    {
+      "id": 22,
+      "question": "What is incident response?",
+      "answer": "Incident Response (IR) is the organized approach to addressing and managing a security breach or cyberattack.\n\nNIST Incident Response Lifecycle:\n  1. Preparation — establish IR plan, train team, deploy tools.\n  2. Detection & Analysis — identify and confirm the incident.\n  3. Containment — limit the spread and impact of the attack.\n  4. Eradication — remove the threat from the environment.\n  5. Recovery — restore systems to normal operation.\n  6. Post-Incident Activity — lessons learned, documentation, improvement.\n\nSANS Incident Response Steps (PICERL):\n  Preparation → Identification → Containment → Eradication → Recovery → Lessons Learned\n\nKey artifacts to collect:\n  • System logs, event logs, firewall logs.\n  • Network traffic captures.\n  • Memory dumps.\n  • Disk images.\n\nDocumentation is critical — maintain a detailed incident timeline throughout the response.",
+      "tags": ["incident response", "NIST", "SANS", "SOC", "forensics"]
+    },
+    {
+      "id": 23,
+      "question": "What is digital forensics?",
+      "answer": "Digital Forensics is the process of collecting, preserving, analyzing, and presenting digital evidence in a legally admissible manner.\n\nBranches:\n  • Computer Forensics — analyze hard drives, file systems, deleted files.\n  • Memory Forensics — analyze volatile memory (RAM) dumps.\n  • Network Forensics — analyze captured network traffic (pcap files).\n  • Mobile Forensics — extract and analyze data from mobile devices.\n  • Cloud Forensics — investigate events in cloud environments.\n\nKey Principles:\n  • Preserve evidence integrity — never work on the original.\n  • Maintain chain of custody.\n  • Document every action taken.\n  • Use write-blockers when acquiring disk images.\n\nPopular tools:\n  • Autopsy — open-source digital forensics platform.\n  • Volatility — memory forensics framework.\n  • FTK (Forensic Toolkit) — commercial forensics suite.\n  • Wireshark / Tshark — network packet analysis.\n  • Sleuth Kit — command-line forensics tools.\n  • Binwalk — analyze and extract firmware images.",
+      "tags": ["digital forensics", "memory forensics", "Autopsy", "Volatility", "chain of custody"]
+    },
+    {
+      "id": 24,
+      "question": "What is Active Directory?",
+      "answer": "Active Directory (AD) is a directory service developed by Microsoft for Windows domain networks. It centralizes authentication and authorization for users, computers, and services.\n\nKey components:\n  • Domain — group of objects sharing the same AD database.\n  • Domain Controller (DC) — server that runs AD DS and authenticates users.\n  • LDAP — protocol used to query AD.\n  • Kerberos — authentication protocol used by AD.\n  • Group Policy (GPO) — centralized configuration and security policy management.\n  • Organizational Units (OUs) — logical containers for organizing AD objects.\n\nCommon AD attack vectors:\n  • Pass-the-Hash — use captured NTLM hash without cracking it.\n  • Pass-the-Ticket — use captured Kerberos ticket.\n  • Kerberoasting — request TGS tickets for SPNs and crack offline.\n  • AS-REP Roasting — target accounts without pre-authentication.\n  • DCSync — impersonate a DC to replicate credentials.\n  • Golden Ticket — forge a Kerberos TGT with krbtgt hash.\n\nDefense tools: BloodHound (attack path analysis), PingCastle, Microsoft Defender for Identity.",
+      "tags": ["Active Directory", "Windows security", "Kerberos", "LDAP", "domain"]
+    },
+    {
+      "id": 25,
+      "question": "What is Kerberoasting?",
+      "answer": "Kerberoasting is an Active Directory attack where an attacker with any valid domain account requests Kerberos TGS tickets for service accounts with SPNs (Service Principal Names), then cracks them offline.\n\nSteps:\n  1. Enumerate accounts with SPNs set.\n  2. Request TGS tickets for those SPNs (no special privileges needed).\n  3. Export the encrypted tickets.\n  4. Crack offline with Hashcat or John the Ripper.\n\nWhy it works:\n  Service accounts often have weak passwords and the TGS ticket is encrypted with the service account's password hash, which can be brute-forced offline.\n\nDetection:\n  • Monitor for unusual Kerberos TGS requests (Event ID 4769).\n  • Look for RC4 encryption type being used for TGS (downgrade).\n\nPrevention:\n  • Use strong, long passwords (25+ chars) for service accounts.\n  • Use Managed Service Accounts (gMSA) — AD auto-manages their passwords.\n  • Monitor and minimize accounts with SPNs.",
+      "tags": ["Kerberoasting", "Active Directory", "Kerberos", "Windows security", "attack"]
+    },
+    {
+      "id": 26,
+      "question": "What is Metasploit?",
+      "answer": "Metasploit is the world's most widely used open-source penetration testing framework. It provides tools for developing and executing exploit code against remote targets.\n\nKey components:\n  • msfconsole — interactive command-line interface.\n  • Modules:\n    - Exploits — code that targets specific vulnerabilities.\n    - Payloads — code executed after exploitation (e.g., reverse shell).\n    - Auxiliary — scanning, fuzzing, sniffing (no payload needed).\n    - Post — post-exploitation modules.\n    - Encoders — evade AV/IDS detection.\n  • msfvenom — payload generator.\n  • Meterpreter — advanced in-memory payload with many features.\n\nBasic workflow:\n  1. Start: msfconsole\n  2. Search: search eternalblue\n  3. Use: use exploit/windows/smb/ms17_010_eternalblue\n  4. Set options: set RHOSTS 192.168.1.1\n  5. Run: exploit\n\nIMPORTANT: Only use Metasploit on systems you have explicit written authorization to test.",
+      "tags": ["Metasploit", "msfconsole", "exploit", "penetration testing", "payload"]
+    },
+    {
+      "id": 27,
+      "question": "What is Wireshark used for?",
+      "answer": "Wireshark is the world's most popular open-source network protocol analyzer. It captures and interactively analyzes network traffic in real time.\n\nKey features:\n  • Deep inspection of hundreds of protocols.\n  • Live capture and offline pcap analysis.\n  • Powerful display filtering.\n  • Color-coding of traffic types.\n  • Export objects from captures (e.g., HTTP files).\n  • Follow TCP/UDP/HTTP streams.\n\nCommon cybersecurity uses:\n  • Detect unencrypted credentials in traffic.\n  • Analyze malware C2 communication.\n  • Investigate network anomalies.\n  • Capture and analyze HTTP/HTTPS traffic.\n  • Identify port scans and reconnaissance.\n  • Troubleshoot network issues.\n\nUseful display filters:\n  http                     — show HTTP traffic\n  tcp.port == 443          — HTTPS traffic\n  ip.addr == 192.168.1.1   — traffic to/from a specific host\n  dns                      — DNS queries\n  http.request.method == 'POST'  — POST requests only\n  !(arp or dns or icmp)    — hide noisy protocols\n\nCLI alternative: tshark (terminal version of Wireshark)",
+      "tags": ["Wireshark", "tshark", "packet analysis", "network", "pcap"]
+    },
+    {
+      "id": 28,
+      "question": "What is a buffer overflow?",
+      "answer": "A buffer overflow occurs when a program writes more data to a buffer than it can hold, overwriting adjacent memory. This can allow an attacker to overwrite return addresses, inject shellcode, or crash the program.\n\nTypes:\n  • Stack-based buffer overflow — overflows a buffer on the call stack.\n  • Heap-based buffer overflow — overflows a buffer in heap memory.\n  • Integer overflow — arithmetic overflow leading to unexpected behavior.\n\nClassic stack overflow attack:\n  1. Find a vulnerable function (e.g., strcpy, gets, sprintf).\n  2. Send input large enough to overflow the buffer.\n  3. Overwrite the saved return address (EIP/RIP).\n  4. Point EIP to attacker-controlled shellcode.\n\nModern protections:\n  • ASLR — Address Space Layout Randomization (randomizes memory layout).\n  • Stack Canaries — detect stack corruption before return.\n  • NX/DEP — No Execute / Data Execution Prevention (marks memory non-executable).\n  • PIE — Position Independent Executable (code is ASLR-enabled).\n\nBypass techniques: ROP (Return-Oriented Programming), ret2libc, heap spraying.",
+      "tags": ["buffer overflow", "exploit", "reverse engineering", "shellcode", "memory corruption"]
+    },
+    {
+      "id": 29,
+      "question": "What is OSINT open source intelligence?",
+      "answer": "OSINT (Open Source Intelligence) is the collection and analysis of information gathered from publicly available sources.\n\nCommon OSINT sources:\n  • Search engines (Google, Bing, DuckDuckGo).\n  • Social media (LinkedIn, Twitter/X, Facebook, Instagram).\n  • Domain/IP lookup (WHOIS, Shodan, Censys).\n  • Government records and public databases.\n  • Job postings (reveal internal technology stack).\n  • Pastebins and code repositories (GitHub leaks).\n  • Dark web monitoring.\n  • Google Dorking (advanced search operators).\n\nUseful OSINT tools:\n  • Maltego — visual link analysis and data mining.\n  • theHarvester — email, domain, IP reconnaissance.\n  • Shodan — search engine for internet-connected devices.\n  • Recon-ng — modular web reconnaissance framework.\n  • SpiderFoot — automated OSINT gathering.\n  • Censys — scan and search internet hosts.\n  • FOCA — metadata extraction from documents.\n\nGoogle Dork examples:\n  site:example.com filetype:pdf\n  intitle:'index of' 'passwords'\n  inurl:admin site:example.com",
+      "tags": ["OSINT", "reconnaissance", "Shodan", "Google dork", "intelligence"]
+    },
+    {
+      "id": 30,
+      "question": "What is CTF capture the flag?",
+      "answer": "CTF (Capture The Flag) is a cybersecurity competition where participants solve security challenges to find hidden strings (flags) that prove they've completed the challenge.\n\nCTF categories:\n  • Web — exploit web vulnerabilities (SQLi, XSS, SSRF, etc.).\n  • Binary Exploitation / Pwn — buffer overflows, format strings, heap exploitation.\n  • Reverse Engineering — analyze binaries, decompile, understand logic.\n  • Cryptography — crack ciphers, exploit weak crypto implementations.\n  • Forensics — recover hidden data, analyze pcaps, memory dumps.\n  • Steganography — find data hidden in images, audio, or video.\n  • OSINT — gather information from public sources.\n  • Miscellaneous — anything else!\n\nPopular CTF platforms:\n  • Hack The Box (HTB) — https://hackthebox.com\n  • TryHackMe — https://tryhackme.com\n  • PicoCTF — https://picoctf.org\n  • CTFtime — tracks CTF events: https://ctftime.org\n  • OverTheWire — Linux wargames\n  • pwn.college — binary exploitation training\n\nFlags are usually formatted like: FLAG{some_secret_string}",
+      "tags": ["CTF", "capture the flag", "competition", "learning", "hacking"]
+    },
+    {
+      "id": 31,
+      "question": "What is reverse engineering?",
+      "answer": "Reverse Engineering in cybersecurity is the process of analyzing software (often malware or binary executables) to understand how it works, without access to source code.\n\nApproaches:\n  • Static Analysis — examine the binary without running it.\n    - Disassembly (assembly code): objdump, Ghidra, IDA Pro\n    - Decompilation (pseudocode): Ghidra, Binary Ninja, IDA Pro\n    - String extraction: strings, FLOSS\n    - Header analysis: file, readelf, PE-bear\n\n  • Dynamic Analysis — run the binary in a controlled environment and observe behavior.\n    - Debuggers: GDB (Linux), x64dbg, WinDbg (Windows)\n    - System call tracing: strace, ltrace\n    - Sandbox: Cuckoo Sandbox, Any.run, Joe Sandbox\n\nCommon RE tools:\n  • Ghidra — free, open-source RE framework by NSA.\n  • IDA Pro — industry-standard disassembler (commercial).\n  • Radare2 / Cutter — open-source RE toolkit.\n  • GDB + pwndbg / peda — Linux debugger with RE extensions.\n  • x64dbg — open-source Windows debugger.\n  • strings — extract printable strings from binaries.\n  • file — identify file type.\n  • readelf / objdump — analyze ELF binaries.",
+      "tags": ["reverse engineering", "malware analysis", "Ghidra", "GDB", "binary", "CTF"]
+    },
+    {
+      "id": 32,
+      "question": "What is IAM identity and access management?",
+      "answer": "IAM (Identity and Access Management) is a framework of policies, technologies, and processes that manage digital identities and control user access to resources.\n\nCore concepts:\n  • Authentication — verify identity (who are you?).\n  • Authorization — verify permissions (what can you do?).\n  • Accounting / Auditing — track what users do.\n\nIAM principles:\n  • Principle of Least Privilege — grant only the minimum access required.\n  • Separation of Duties — no single person has full control over sensitive processes.\n  • Zero Trust — never trust, always verify — even inside the network.\n\nAuthentication factors:\n  • Something you know — password, PIN.\n  • Something you have — hardware token, OTP.\n  • Something you are — biometrics (fingerprint, face).\n\nMFA/2FA: combining two or more factors dramatically improves security.\n\nCommon IAM tools and protocols:\n  • Active Directory (LDAP + Kerberos)\n  • OAuth 2.0 / OpenID Connect\n  • SAML 2.0 (federated identity)\n  • AWS IAM, Azure AD\n  • CyberArk, BeyondTrust (Privileged Access Management)",
+      "tags": ["IAM", "authentication", "authorization", "MFA", "zero trust", "Active Directory"]
+    },
+    {
+      "id": 33,
+      "question": "What is threat hunting?",
+      "answer": "Threat Hunting is the proactive, human-driven search through networks, systems, and logs to detect threats that have evaded automated security controls.\n\nKey difference from monitoring:\n  Monitoring is reactive (alert → investigate).\n  Threat Hunting is proactive (hypothesis → search → discover).\n\nThreat Hunting Process:\n  1. Hypothesis — based on threat intelligence, MITRE ATT&CK, or past incidents.\n  2. Data Collection — logs, EDR telemetry, network traffic, memory.\n  3. Investigation — search for indicators of attack (IoAs) or behavior.\n  4. Discovery — identify legitimate or malicious activity.\n  5. Response & Improvement — escalate findings, update detection rules.\n\nUseful frameworks:\n  • MITRE ATT&CK — adversary tactics, techniques, and procedures (TTPs).\n  • Pyramid of Pain — categorizes IoCs by how hard they are to replace for attackers.\n\nCommon data sources:\n  • Windows Event Logs (Security, Sysmon)\n  • EDR telemetry (process creation, network connections)\n  • DNS logs\n  • Proxy/web logs\n  • PowerShell/command execution logs",
+      "tags": ["threat hunting", "MITRE ATT&CK", "SOC", "proactive security", "EDR"]
+    },
+    {
+      "id": 34,
+      "question": "What is MITRE ATT&CK?",
+      "answer": "MITRE ATT&CK (Adversarial Tactics, Techniques, and Common Knowledge) is a globally accessible knowledge base of adversary tactics and techniques based on real-world observations.\n\nStructure:\n  • Tactics — the 'why' (adversary goal): e.g., Initial Access, Execution, Persistence, Privilege Escalation, Defense Evasion, Credential Access, Discovery, Lateral Movement, Collection, Exfiltration, Command and Control, Impact.\n  • Techniques — the 'how': specific methods to achieve the tactic.\n  • Sub-techniques — more specific implementations of a technique.\n  • Procedures — specific real-world use by threat actors.\n\nVersions:\n  • Enterprise ATT&CK (Windows, Linux, macOS, Cloud).\n  • Mobile ATT&CK (Android, iOS).\n  • ICS ATT&CK (Industrial Control Systems).\n\nUses:\n  • Threat hunting and detection rule development.\n  • Red team planning.\n  • Mapping defenses to known TTPs.\n  • SOC metrics and coverage analysis.\n\nAccess: https://attack.mitre.org",
+      "tags": ["MITRE ATT&CK", "threat hunting", "TTPs", "SOC", "red team", "framework"]
+    },
+    {
+      "id": 35,
+      "question": "What is secure coding?",
+      "answer": "Secure coding is the practice of writing software in a way that guards against accidental introduction of security vulnerabilities.\n\nKey secure coding principles:\n  • Validate all inputs — never trust user-supplied data.\n  • Use parameterized queries — prevent SQL injection.\n  • Avoid dangerous functions — gets(), strcpy() in C; eval() in Python/JS.\n  • Handle errors securely — don't expose stack traces to users.\n  • Use least privilege — processes should run with minimal rights.\n  • Secure defaults — applications should be secure by default.\n  • Fail securely — errors should deny access, not grant it.\n  • Keep secrets out of code — use environment variables or secrets managers.\n  • Sanitize output — encode data before displaying to prevent XSS.\n  • Use proven cryptographic libraries — never roll your own crypto.\n\nOWASP Secure Coding Practices:\n  https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/\n\nTools:\n  • SAST (Static Analysis): Bandit (Python), Semgrep, SonarQube.\n  • DAST (Dynamic Analysis): OWASP ZAP, Nikto.\n  • Dependency scanning: Safety (Python), npm audit, Snyk.",
+      "tags": ["secure coding", "OWASP", "SAST", "DevSecOps", "vulnerability prevention"]
+    },
+    {
+      "id": 36,
+      "question": "What is a CVE?",
+      "answer": "CVE (Common Vulnerabilities and Exposures) is a publicly disclosed list of known cybersecurity vulnerabilities, each assigned a unique identifier.\n\nCVE ID format: CVE-YEAR-NNNNN\n  Example: CVE-2021-44228 (Log4Shell)\n           CVE-2017-0144 (EternalBlue)\n           CVE-2014-0160 (Heartbleed)\n\nKey terms:\n  • CVSS (Common Vulnerability Scoring System) — scores vulnerability severity from 0.0 to 10.0:\n    - 0.1–3.9: Low\n    - 4.0–6.9: Medium\n    - 7.0–8.9: High\n    - 9.0–10.0: Critical\n\n  • NVD (National Vulnerability Database) — US government repository of CVE data.\n  • Exploit DB — searchable database of public exploits.\n  • Zero-day — a vulnerability that is unknown to the vendor and has no patch.\n\nHow to check CVEs:\n  • https://cve.mitre.org\n  • https://nvd.nist.gov\n  • https://www.exploit-db.com\n  • searchsploit <keyword>   (Kali Linux)",
+      "tags": ["CVE", "CVSS", "vulnerability", "NVD", "zero day", "patch management"]
+    },
+    {
+      "id": 37,
+      "question": "What is steganography?",
+      "answer": "Steganography is the practice of hiding secret data within ordinary, non-secret files or messages to avoid detection.\n\nDifference from cryptography:\n  • Cryptography makes data unreadable (encrypted).\n  • Steganography hides the existence of the data.\n  • Best security: use both together.\n\nCommon techniques:\n  • LSB (Least Significant Bit) — hide data in the lowest-order bits of image pixel values.\n  • Whitespace steganography — hide data in extra whitespace in text files.\n  • Audio steganography — hide data in audio files.\n  • Video steganography — hide data in video frames.\n  • Network steganography — hide data in protocol headers or timing.\n\nCommon CTF tools:\n  • steghide — hide/extract data in JPEG and BMP.\n  • zsteg — detect LSB steganography in PNG and BMP.\n  • stegsolve — image analysis for CTF steganography.\n  • binwalk — extract hidden files from other files.\n  • exiftool — read/write image metadata.\n  • strings — extract hidden text from binary files.",
+      "tags": ["steganography", "CTF", "forensics", "steganalysis", "hidden data"]
+    },
+    {
+      "id": 38,
+      "question": "What is Wi-Fi security WPA WPA2?",
+      "answer": "Wi-Fi security protocols protect wireless network communications.\n\nEvolution:\n  • WEP (Wired Equivalent Privacy) — obsolete, broken in minutes. Never use.\n  • WPA (Wi-Fi Protected Access) — used TKIP, stronger than WEP but still has weaknesses.\n  • WPA2 — uses AES-CCMP encryption. Strong when using a long, complex password.\n  • WPA3 — latest standard, uses SAE (Simultaneous Authentication of Equals), protects against offline dictionary attacks.\n\nWPA2 attack vectors:\n  • 4-way handshake capture + offline dictionary attack.\n  • PMKID attack (no client needed).\n  • EVIL twin / rogue AP attacks.\n  • WPS PIN brute force (if WPS is enabled).\n\nBest practices:\n  • Use WPA3 if supported by all devices.\n  • Use WPA2 with a long, random passphrase (20+ characters).\n  • Disable WPS (Wi-Fi Protected Setup).\n  • Use network segmentation (guest network vs. main network).\n  • Monitor for rogue access points.",
+      "tags": ["Wi-Fi", "WPA2", "WPA3", "wireless security", "WEP", "aircrack"]
+    },
+    {
+      "id": 39,
+      "question": "What is TLS SSL?",
+      "answer": "TLS (Transport Layer Security) is a cryptographic protocol that provides secure communication over a network. SSL (Secure Sockets Layer) is its predecessor and is now deprecated.\n\nTLS versions:\n  • SSL 2.0 / 3.0 — obsolete and broken (POODLE, DROWN).\n  • TLS 1.0 / 1.1 — deprecated by RFC 8996 in 2021.\n  • TLS 1.2 — widely used, secure when properly configured.\n  • TLS 1.3 — latest, faster, removes weak cipher suites, mandatory forward secrecy.\n\nTLS handshake (simplified TLS 1.2):\n  1. Client Hello — supported cipher suites, TLS version.\n  2. Server Hello — chosen cipher suite + certificate.\n  3. Certificate validation.\n  4. Key exchange.\n  5. Session keys derived.\n  6. Encrypted communication begins.\n\nCommon TLS attacks:\n  • BEAST, CRIME, BREACH — compression/encryption attacks.\n  • POODLE — forces SSL 3.0 downgrade.\n  • Heartbleed (CVE-2014-0160) — OpenSSL memory leak.\n  • Certificate forgery / MitM.\n\nBest practice:\n  • Enforce TLS 1.2 minimum, prefer TLS 1.3.\n  • Use HSTS (HTTP Strict Transport Security).\n  • Disable weak cipher suites.",
+      "tags": ["TLS", "SSL", "HTTPS", "encryption", "certificates", "cryptography"]
+    },
+    {
+      "id": 40,
+      "question": "What is a zero day vulnerability?",
+      "answer": "A zero-day (0-day) vulnerability is a software flaw that is unknown to the vendor and has no patch available. Attackers who discover zero-days can exploit them without defenders having a chance to patch.\n\nTimeline:\n  Day 0: Vulnerability discovered by attacker (or researcher).\n  Day 0: Exploit developed.\n  Day 0: Attack occurs — zero days for defenders to respond.\n  Day N: Vendor discovers the vulnerability.\n  Day N+x: Patch is released.\n\nZero-day market:\n  • Bug bounty programs — responsible disclosure to vendors (e.g., HackerOne).\n  • Gray market — brokers like Zerodium pay millions for critical 0-days.\n  • Dark market — sold to malicious actors or nation-state groups.\n\nDefense against zero-days:\n  • Defense in depth — no single point of failure.\n  • Network segmentation — limit blast radius.\n  • Behavior-based detection (anomaly detection, EDR).\n  • Application sandboxing.\n  • Timely patch management — reduce attack surface.\n  • Threat intelligence — monitor for exploitation in the wild.",
+      "tags": ["zero day", "0day", "vulnerability", "exploit", "patch management"]
+    },
+    {
+      "id": 41,
+      "question": "What is Kali Linux?",
+      "answer": "Kali Linux is a Debian-based Linux distribution maintained by Offensive Security, designed specifically for penetration testing, digital forensics, and security research.\n\nKey features:\n  • 600+ pre-installed security tools.\n  • Regular updates from the Offensive Security team.\n  • Available as a live bootable OS, VM, Docker image, or WSL2.\n  • Customizable — can install a minimal version and add tools as needed.\n\nPre-installed tool categories:\n  • Information Gathering (Nmap, Maltego, Recon-ng)\n  • Vulnerability Analysis (Nikto, OpenVAS)\n  • Web Application Testing (Burp Suite, sqlmap, gobuster)\n  • Password Attacks (Hashcat, John, Hydra)\n  • Wireless Attacks (Aircrack-ng, Wifite)\n  • Exploitation (Metasploit, Exploitdb)\n  • Forensics (Autopsy, Binwalk, Volatility)\n  • Reverse Engineering (Ghidra, Radare2)\n\nDefault credentials: kali / kali\n\nTermux note: Kali Linux can be installed in Termux via:\n  pkg install wget\n  wget -O install-nethunter-termux https://offs.ec/2MceZWr\n  chmod +x install-nethunter-termux\n  ./install-nethunter-termux",
+      "tags": ["Kali Linux", "penetration testing", "security tools", "Linux", "Offensive Security"]
+    },
+    {
+      "id": 42,
+      "question": "What is Burp Suite?",
+      "answer": "Burp Suite is the leading web application security testing platform, developed by PortSwigger.\n\nEditions:\n  • Community Edition — free, limited functionality.\n  • Professional — full features, paid license.\n  • Enterprise — automated scanning for CI/CD pipelines.\n\nKey tools:\n  • Proxy — intercepts and modifies HTTP/HTTPS traffic between browser and server.\n  • Repeater — resend and modify individual requests manually.\n  • Intruder — automated, customizable attacks (fuzzing, brute force).\n  • Scanner (Pro) — automated vulnerability scanner.\n  • Decoder — encode/decode data (URL, Base64, HTML, hex).\n  • Comparer — compare two pieces of data.\n  • Sequencer — analyze randomness of session tokens.\n  • Logger — logs all HTTP traffic through the proxy.\n\nSetup:\n  1. Start Burp Suite.\n  2. Set browser proxy to 127.0.0.1:8080.\n  3. Install the Burp CA certificate in the browser.\n  4. Start intercepting traffic.\n\nBurp Suite is essential for manual web application penetration testing.",
+      "tags": ["Burp Suite", "web security", "proxy", "penetration testing", "OWASP"]
+    },
+    {
+      "id": 43,
+      "question": "What is CSRF cross-site request forgery?",
+      "answer": "CSRF (Cross-Site Request Forgery) is a web attack that tricks an authenticated user's browser into sending unauthorized requests to a web application.\n\nHow it works:\n  1. User is logged in to bank.com (has a valid session cookie).\n  2. User visits attacker's malicious site evil.com.\n  3. evil.com contains a hidden request to bank.com:\n     <img src='https://bank.com/transfer?to=attacker&amount=1000'>\n  4. The browser sends the request with the user's cookies.\n  5. bank.com processes the transfer.\n\nConditions needed:\n  • User must be authenticated.\n  • State-changing action via GET or POST.\n  • No CSRF token protection.\n\nPrevention:\n  • CSRF tokens — unique, secret, unpredictable tokens per request.\n  • SameSite cookie attribute (Strict or Lax).\n  • Check Origin and Referer headers.\n  • Require re-authentication for sensitive actions.\n  • Custom request headers (works for AJAX requests).",
+      "tags": ["CSRF", "OWASP", "web security", "cross-site request forgery"]
+    },
+    {
+      "id": 44,
+      "question": "What is SSRF server-side request forgery?",
+      "answer": "SSRF (Server-Side Request Forgery) is a vulnerability that allows an attacker to make the server-side application issue HTTP requests to an unintended location.\n\nHow it works:\n  The application fetches a URL specified by the user:\n    https://example.com/fetch?url=https://external-site.com\n  An attacker changes this to:\n    https://example.com/fetch?url=http://169.254.169.254/latest/meta-data/\n  This fetches AWS EC2 metadata, potentially exposing cloud credentials.\n\nCommon targets:\n  • Cloud metadata services (AWS: 169.254.169.254, GCP, Azure).\n  • Internal services not exposed to the internet.\n  • Localhost services (http://127.0.0.1:6379 — Redis).\n  • Internal network scanning.\n\nImpact:\n  • Access internal systems behind firewall.\n  • Steal cloud credentials.\n  • Read sensitive internal files (via file:// protocol).\n  • Internal port scanning.\n\nPrevention:\n  • Validate and sanitize all user-supplied URLs.\n  • Block requests to private IP ranges and metadata endpoints.\n  • Use allowlists for external URLs.\n  • Disable unused URL schemes (file://, gopher://).",
+      "tags": ["SSRF", "OWASP", "web security", "cloud security", "server-side"]
+    },
+    {
+      "id": 45,
+      "question": "What is the principle of least privilege?",
+      "answer": "The Principle of Least Privilege (PoLP) is a security concept that states every user, program, or process should have only the minimum access rights necessary to perform its function.\n\nWhy it matters:\n  • Limits the blast radius of a security breach.\n  • Reduces the attack surface.\n  • Prevents privilege escalation.\n  • Supports compliance requirements.\n\nApplications:\n  • Users — grant only the role and permissions needed for their job.\n  • Service accounts — minimum database or system access only.\n  • Applications — only the file system access, network access they need.\n  • Linux — don't run services as root; use dedicated system users.\n  • Cloud (IAM) — grant specific resource actions, not AdministratorAccess.\n  • Containers — use non-root users, read-only file systems where possible.\n\nImplementation:\n  • Regularly review and revoke unnecessary permissions.\n  • Use role-based access control (RBAC).\n  • Implement privileged access management (PAM).\n  • Monitor for permission changes.",
+      "tags": ["least privilege", "IAM", "access control", "security principles", "Zero Trust"]
+    },
+    {
+      "id": 46,
+      "question": "What is network scanning and reconnaissance?",
+      "answer": "Network scanning and reconnaissance is the process of gathering information about target systems, networks, and services to identify potential entry points.\n\nReconnaissance types:\n  • Passive — gather information without directly interacting with the target (OSINT, Shodan, WHOIS).\n  • Active — directly probe the target (Nmap scans, banner grabbing).\n\nNmap scan types:\n  • TCP Connect (-sT) — full TCP handshake.\n  • SYN/Stealth (-sS) — half-open scan, less detectable.\n  • UDP (-sU) — discover UDP services.\n  • Service version detection (-sV).\n  • OS detection (-O).\n  • Script scan (-sC or --script).\n\nOther tools:\n  • Masscan — extremely fast port scanner.\n  • Netdiscover — ARP-based host discovery.\n  • Angry IP Scanner — GUI-based scanner.\n  • Shodan — passive scan of internet hosts.\n  • theHarvester — email, subdomain, host information.\n\nCommon ports to know:\n  21=FTP, 22=SSH, 23=Telnet, 25=SMTP, 53=DNS, 80=HTTP, 110=POP3,\n  143=IMAP, 443=HTTPS, 445=SMB, 3306=MySQL, 3389=RDP, 8080=HTTP-alt",
+      "tags": ["nmap", "reconnaissance", "network scanning", "penetration testing", "port scan"]
+    },
+    {
+      "id": 47,
+      "question": "What is a honeypot?",
+      "answer": "A honeypot is a security resource designed to be probed, attacked, or compromised — intentionally to attract attackers and study their methods.\n\nTypes:\n  • Low-interaction honeypot — simulates a limited set of services; lower risk, easy to deploy (e.g., HoneyD).\n  • High-interaction honeypot — real systems with full OS and services; captures more data but riskier.\n  • Research honeypots — gather intelligence about attackers and malware.\n  • Production honeypots — detect intrusions within a corporate network.\n\nHoneypot variations:\n  • Honeynet — a network of honeypots.\n  • Honeytoken — fake data (credentials, files) that trigger alerts when accessed.\n  • Canary token — a URL or file that alerts when opened (canarytokens.org).\n\nBenefits:\n  • Early detection of attackers inside the network.\n  • Gather threat intelligence.\n  • Study attacker TTPs.\n  • Divert attackers from real systems.\n\nLimitations:\n  • Only detects attackers who interact with the honeypot.\n  • Sophisticated attackers can detect and avoid them.",
+      "tags": ["honeypot", "honeynet", "deception", "threat intelligence", "detection"]
+    },
+    {
+      "id": 48,
+      "question": "What is password hashing salting?",
+      "answer": "Password hashing with salting is the secure way to store passwords in a database.\n\nWhy plain text storage is dangerous:\n  If the DB is breached, all passwords are immediately exposed.\n\nWhy unsalted hashing is dangerous:\n  Attackers can use rainbow tables (precomputed hash→password tables) to crack hashes instantly.\n\nSalting:\n  A salt is a unique, random value added to each password before hashing.\n  hash = hash_function(password + salt)\n  The salt is stored alongside the hash in the database.\n  Two users with the same password will have different hashes.\n  Defeats rainbow table and precomputation attacks.\n\nRecommended password hashing algorithms:\n  • bcrypt — intentionally slow, built-in salt, widely supported.\n  • Argon2 — winner of the Password Hashing Competition, most modern choice.\n  • scrypt — memory-hard, resistant to GPU cracking.\n  • PBKDF2 — NIST-approved, used in many standards.\n\nDO NOT use for passwords: MD5, SHA-1, SHA-256 (without stretching).\n\nPython example with bcrypt:\n  import bcrypt\n  hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())\n  bcrypt.checkpw(password.encode(), hashed)  # verify",
+      "tags": ["password", "hashing", "bcrypt", "Argon2", "salt", "cryptography"]
+    },
+    {
+      "id": 49,
+      "question": "What is cloud security?",
+      "answer": "Cloud security encompasses technologies, policies, and controls to protect cloud-based systems, data, and infrastructure.\n\nShared Responsibility Model:\n  • Cloud provider is responsible for security OF the cloud (physical, infrastructure, hypervisor).\n  • Customer is responsible for security IN the cloud (data, access, OS, applications).\n\nCommon cloud security risks:\n  • Misconfigured S3 buckets / storage — publicly readable sensitive data.\n  • Overly permissive IAM roles.\n  • Exposed credentials in code repositories.\n  • Insecure APIs.\n  • Lack of logging and monitoring.\n  • SSRF to metadata service (169.254.169.254).\n\nBest practices:\n  • Enable MFA for all accounts, especially root/admin.\n  • Apply least privilege to IAM roles.\n  • Enable CloudTrail / Azure Monitor / GCP Audit Logs.\n  • Encrypt data at rest and in transit.\n  • Use VPCs and security groups to restrict network access.\n  • Scan for misconfigurations (ScoutSuite, Prowler, CloudSploit).\n\nCloud security tools:\n  • Prowler — AWS security best practices scanner.\n  • ScoutSuite — multi-cloud security auditing.\n  • Pacu — AWS penetration testing framework.",
+      "tags": ["cloud security", "AWS", "Azure", "GCP", "IAM", "misconfiguration"]
+    },
+    {
+      "id": 50,
+      "question": "What is malware analysis?",
+      "answer": "Malware analysis is the process of examining malicious software to understand its functionality, origin, and potential impact.\n\nTypes of analysis:\n\n1. Static Analysis (without execution):\n  • Identify file type: file malware.exe\n  • Extract strings: strings malware.exe | grep -i http\n  • Check imports/exports: PE-bear, CFF Explorer\n  • Disassemble/decompile: Ghidra, IDA Pro, Binary Ninja\n  • Compute hash (for threat intel lookup): md5sum, sha256sum\n  • Detect packers/obfuscation: Detect-It-Easy (DIE), PEiD\n\n2. Dynamic Analysis (with execution in sandbox):\n  • Observe system calls: Process Monitor (Windows), strace (Linux)\n  • Monitor network traffic: Wireshark\n  • Monitor registry changes (Windows): Regshot\n  • Automated sandbox: Cuckoo, Any.run, Joe Sandbox, Hybrid-Analysis\n\n3. Memory Forensics:\n  • Dump and analyze memory: Volatility\n  • Find injected code: malfind plugin\n\nSafe practices:\n  • Always analyze malware in an isolated environment (VM, sandbox).\n  • Take snapshots before analysis.\n  • Use a dedicated malware analysis VM (Flare-VM, REMnux).",
+      "tags": ["malware analysis", "static analysis", "dynamic analysis", "sandbox", "Ghidra", "forensics"]
+    },
+    {
+      "id": 51,
+      "question": "What is a brute force attack?",
+      "answer": "A brute force attack systematically tries all possible combinations of passwords, keys, or credentials until the correct one is found.\n\nTypes:\n  • Pure brute force — try every possible combination.\n  • Dictionary attack — try words from a wordlist (e.g., rockyou.txt).\n  • Hybrid attack — dictionary words + mutations (add numbers, symbols).\n  • Credential stuffing — use leaked username/password pairs from breaches.\n  • Password spraying — try one common password against many accounts (avoids lockout).\n\nPopular wordlists:\n  • rockyou.txt — 14 million real-world passwords from the RockYou breach.\n  • SecLists — comprehensive collection of security-related lists.\n\nTools:\n  • Hashcat — offline hash cracking.\n  • John the Ripper — offline hash cracking.\n  • Hydra — online service brute force.\n  • Medusa — parallel online brute force.\n  • CrackStation — online hash lookup.\n\nDefenses:\n  • Account lockout after N failed attempts.\n  • CAPTCHA.\n  • Rate limiting.\n  • Multi-factor authentication.\n  • Strong password policies.\n  • Monitor for password spraying (many accounts, few attempts each).",
+      "tags": ["brute force", "password cracking", "Hashcat", "Hydra", "credential stuffing"]
+    },
+    {
+      "id": 52,
+      "question": "What is port forwarding and tunneling?",
+      "answer": "Port forwarding creates a network tunnel that redirects traffic from one port/host to another, often used to bypass firewalls or access internal services.\n\nSSH Port Forwarding:\n\n  Local forwarding (-L):\n    ssh -L 8080:internal-server:80 user@bastion\n    Access internal-server:80 via localhost:8080\n\n  Remote forwarding (-R):\n    ssh -R 4444:localhost:4444 user@external-server\n    External server can reach your local port 4444\n\n  Dynamic (SOCKS5 proxy) (-D):\n    ssh -D 1080 -N user@external-server\n    Route browser traffic through external server\n\nNetcat as a simple tunnel:\n  nc -l -p 4444 | nc target 80\n\nOther tunneling tools:\n  • chisel — fast TCP/UDP tunnel over HTTP.\n  • socat — versatile relay tool.\n  • ngrok — expose localhost to the internet.\n  • stunnel — add TLS to any TCP connection.\n  • sshuttle — VPN-over-SSH (no root needed on client).\n\nSecurity note:\n  Tunneling can be used to bypass network controls — organizations should monitor for unauthorized SSH tunnels.",
+      "tags": ["port forwarding", "tunneling", "SSH", "pivoting", "network", "penetration testing"]
+    },
+    {
+      "id": 53,
+      "question": "What is SQL injection prevention parameterized queries?",
+      "answer": "Parameterized queries (prepared statements) are the most effective defense against SQL injection.\n\nVulnerable code (Python + MySQL):\n  query = \"SELECT * FROM users WHERE username = '\" + username + \"'\"\n  cursor.execute(query)  # DANGEROUS\n\nSecure code with parameterized query:\n  query = \"SELECT * FROM users WHERE username = %s\"\n  cursor.execute(query, (username,))  # SAFE\n\nThe database driver handles escaping — the user input is never interpreted as SQL.\n\nIn Python with SQLite:\n  cursor.execute(\"SELECT * FROM users WHERE id = ?\", (user_id,))\n\nWith SQLAlchemy (ORM):\n  user = session.query(User).filter_by(username=username).first()\n\nAdditional defenses:\n  • Input validation (reject unexpected characters).\n  • Stored procedures (when used correctly).\n  • Principle of least privilege on DB accounts.\n  • Web Application Firewall (WAF) as defense-in-depth.\n  • Regular security testing and code review.",
+      "tags": ["SQL injection", "parameterized queries", "secure coding", "OWASP", "Python"]
+    },
+    {
+      "id": 54,
+      "question": "What is Windows Event logging and security auditing?",
+      "answer": "Windows Event Logging provides a record of system, security, and application events critical for security monitoring and forensics.\n\nKey Windows Event Log channels:\n  • Security — logon events, privilege use, object access, policy changes.\n  • System — OS events, service status, driver issues.\n  • Application — application-specific events.\n  • PowerShell/Operational — PowerShell script execution.\n  • Sysmon — enhanced process, network, file, registry logging (requires installation).\n\nCritical Security Event IDs:\n  4624 — Successful logon\n  4625 — Failed logon\n  4648 — Logon with explicit credentials (runas)\n  4672 — Admin privileges assigned\n  4698 — Scheduled task created\n  4720 — User account created\n  4732 — User added to security group\n  4776 — NTLM authentication\n  7045 — New service installed\n\nSysmon Event IDs:\n  1  — Process creation\n  3  — Network connection\n  11 — File created\n  12,13,14 — Registry events\n\nTool: Sysmon (System Monitor) — install with a config file like SwiftOnSecurity's sysmon-config for detailed telemetry.",
+      "tags": ["Windows", "event logs", "Sysmon", "auditing", "SOC", "forensics"]
+    },
+    {
+      "id": 55,
+      "question": "What is Python used for in cybersecurity?",
+      "answer": "Python is the most widely used programming language in cybersecurity due to its simplicity, extensive library ecosystem, and rapid development capabilities.\n\nCommon cybersecurity uses:\n\n  1. Network tools:\n     • Scapy — craft, send, and analyze network packets.\n     • socket — raw socket programming.\n     • impacket — Windows network protocols (SMB, Kerberos, LDAP).\n\n  2. Web security:\n     • requests — HTTP client for web testing.\n     • BeautifulSoup — web scraping.\n     • selenium — browser automation.\n\n  3. Cryptography:\n     • cryptography — modern, high-level crypto library.\n     • pycryptodome — AES, RSA, hashing.\n     • hashlib — built-in hashing (SHA, MD5).\n\n  4. Malware analysis / forensics:\n     • pefile — parse PE (Windows executable) files.\n     • yara-python — YARA rule matching.\n     • volatility3 — memory forensics.\n\n  5. CTF / exploit development:\n     • pwntools — binary exploitation framework.\n     • z3 — SMT solver for reverse engineering puzzles.\n\n  6. Automation:\n     • paramiko — SSH automation.\n     • subprocess — run system commands.\n     • os, shutil — file system operations.",
+      "tags": ["Python", "cybersecurity", "Scapy", "pwntools", "scripting", "automation"]
+    },
+    {
+      "id": 56,
+      "question": "ما هو أمن المعلومات؟",
+      "answer": "أمن المعلومات هو مجموعة من الممارسات والتقنيات والسياسات التي تهدف إلى حماية المعلومات من الوصول غير المصرح به، والتعديل، والإتلاف، أو الكشف عنها.\n\nيقوم أمن المعلومات على ثلاثة مبادئ رئيسية تُعرف بـ CIA Triad:\n\n  • السرية (Confidentiality) — ضمان أن المعلومات لا تُكشف إلا لمن هم مخولون بالاطلاع عليها.\n  • النزاهة (Integrity) — ضمان دقة المعلومات وعدم تعديلها بشكل غير مصرح به.\n  • التوفر (Availability) — ضمان أن المعلومات والأنظمة متاحة للمخولين عند الحاجة.\n\nمجالات أمن المعلومات:\n  • أمن الشبكات\n  • أمن التطبيقات\n  • الاستجابة للحوادث\n  • التشفير\n  • إدارة الهوية والوصول\n  • الأمن الجنائي الرقمي\n  • أمن السحابة",
+      "tags": ["أمن المعلومات", "مبادئ", "CIA", "عربي"]
+    },
+    {
+      "id": 57,
+      "question": "ما هو اختبار الاختراق؟",
+      "answer": "اختبار الاختراق (Penetration Testing) هو هجوم إلكتروني محاكى ومصرح به يُنفَّذ على نظام أو شبكة أو تطبيق لاكتشاف الثغرات الأمنية قبل أن يستغلها المهاجمون الحقيقيون.\n\nمراحل اختبار الاختراق:\n  1. التخطيط والاستطلاع — جمع المعلومات عن الهدف.\n  2. المسح والتعداد — اكتشاف المنافذ والخدمات والثغرات.\n  3. الاستغلال — محاولة اختراق الثغرات المكتشفة.\n  4. ما بعد الاختراق — تقييم الأثر وتصعيد الصلاحيات.\n  5. إعداد التقرير — توثيق النتائج والتوصيات.\n\nأنواع اختبار الاختراق:\n  • Black Box — المختبر لا يملك أي معلومات مسبقة.\n  • White Box — المختبر يملك معرفة كاملة بالنظام.\n  • Gray Box — معلومات جزئية.\n\nتنبيه: يجب الحصول على إذن كتابي صريح قبل إجراء أي اختبار اختراق.",
+      "tags": ["اختبار الاختراق", "pentest", "عربي", "أمن"]
+    },
+    {
+      "id": 58,
+      "question": "ما هو التشفير؟",
+      "answer": "التشفير هو علم تحويل البيانات من صيغتها المقروءة إلى صيغة غير مفهومة لحمايتها من الوصول غير المصرح به.\n\nأنواع التشفير:\n\n  • التشفير المتماثل (Symmetric Encryption):\n    نفس المفتاح يُستخدم للتشفير وفك التشفير.\n    أمثلة: AES, DES, ChaCha20.\n    مميزات: سريع، مناسب للبيانات الكبيرة.\n\n  • التشفير غير المتماثل (Asymmetric Encryption):\n    مفتاح عام للتشفير، مفتاح خاص لفك التشفير.\n    أمثلة: RSA, ECC.\n    الاستخدام: تبادل المفاتيح، التوقيع الرقمي.\n\n  • دوال التجزئة (Hash Functions):\n    تحويل أحادي الاتجاه ينتج بصمة ثابتة الحجم.\n    أمثلة: SHA-256, bcrypt.\n    الاستخدام: تخزين كلمات المرور، التحقق من النزاهة.\n\nالبروتوكولات المشهورة:\n  • TLS/SSL — تشفير الاتصالات على الإنترنت.\n  • PGP/GPG — تشفير البريد الإلكتروني.\n  • SSH — اتصال آمن بالخوادم البعيدة.",
+      "tags": ["تشفير", "cryptography", "AES", "RSA", "عربي"]
+    },
+    {
+      "id": 59,
+      "question": "ما هو الحقن في قاعدة البيانات SQL Injection؟",
+      "answer": "SQL Injection هو ثغرة أمنية تسمح للمهاجم بالتلاعب في استعلامات قاعدة البيانات عن طريق حقن كود SQL ضار من خلال مدخلات المستخدم.\n\nكيف تعمل الثغرة:\n  استعلام طبيعي:\n    SELECT * FROM users WHERE username = 'ahmed'\n\n  مدخل المهاجم: ' OR '1'='1\n  الاستعلام يصبح:\n    SELECT * FROM users WHERE username = '' OR '1'='1'\n  هذا يُعيد كل المستخدمين وقد يتجاوز تسجيل الدخول.\n\nطرق الوقاية:\n  • استخدام Parameterized Queries (الاستعلامات الجاهزة).\n  • استخدام ORM مثل SQLAlchemy.\n  • التحقق من صحة المدخلات.\n  • تطبيق مبدأ أقل الصلاحيات على حسابات قاعدة البيانات.\n  • استخدام WAF (Web Application Firewall).\n\nأداة الفحص: sqlmap",
+      "tags": ["SQL Injection", "حقن قاعدة البيانات", "OWASP", "أمن الويب", "عربي"]
+    },
+    {
+      "id": 60,
+      "question": "ما هي أنواع البرمجيات الخبيثة؟",
+      "answer": "البرمجيات الخبيثة (Malware) هي أي برنامج مصمم لإلحاق الضرر أو الحصول على وصول غير مصرح به.\n\nأنواعها:\n  • الفيروس (Virus) — يلتصق بالملفات وينتشر عند تشغيلها.\n  • الدودة (Worm) — تنتشر ذاتياً عبر الشبكات بدون تدخل المستخدم.\n  • حصان طروادة (Trojan) — يتظاهر بأنه برنامج شرعي وفتح باب خلفي.\n  • برنامج الفدية (Ransomware) — يشفر الملفات ويطلب فدية.\n  • برنامج التجسس (Spyware) — يجمع البيانات خفية.\n  • الجذور الخفية (Rootkit) — يختبئ عميقاً في نظام التشغيل.\n  • برنامج تسجيل النقرات (Keylogger) — يسجل كل ضربة مفاتيح.\n  • شبكة البوت (Botnet) — جهاز مصاب يتحكم فيه المهاجم عن بعد.\n\nطرق الوقاية:\n  • تحديث النظام والتطبيقات باستمرار.\n  • استخدام برنامج مكافحة فيروسات موثوق.\n  • عدم فتح مرفقات البريد المشبوهة.\n  • النسخ الاحتياطي المنتظم للبيانات.",
+      "tags": ["برمجيات خبيثة", "malware", "فيروس", "ransomware", "عربي"]
+    }
+  ]
+}
