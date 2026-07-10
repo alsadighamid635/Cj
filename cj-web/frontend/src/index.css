@@ -22,9 +22,9 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body, #root {
+html {
+  /* --app-height is set by JS (visualViewport) for perfect Android keyboard support */
   height: 100%;
-  overflow: hidden;
 }
 
 body {
@@ -33,6 +33,15 @@ body {
   color: var(--text-primary);
   font-size: 15px;
   line-height: 1.6;
+  /* Prevent the page from scrolling when keyboard opens on Android */
+  overscroll-behavior: none;
+  overflow: hidden;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ── Scrollbar ────────────────────────────────────────────────────── */
@@ -44,8 +53,11 @@ body {
 /* ── Layout ───────────────────────────────────────────────────────── */
 .app-layout {
   display: flex;
-  height: 100vh;
+  /* Use JS-set var first, then dvh (shrinks with keyboard), then vh fallback */
+  height: var(--app-height, 100dvh);
   overflow: hidden;
+  position: fixed;
+  inset: 0;
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────── */
