@@ -7,6 +7,7 @@ services:
     rootDir: cj-web/backend
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
+    autoDeploy: true
     envVars:
       - key: GROQ_API_KEY
         sync: false          # set manually in Render dashboard
