@@ -1,23 +1,36 @@
 ---
 name: CJ-AI Web stack
-description: Architecture and run instructions for the cj-web full-stack project.
+description: Runtime stack, key packages, and deployment targets for the CJ-AI web app.
 ---
 
 ## Stack
-- Backend: FastAPI + ChromaDB (RAG) + APScheduler, runs on port 8000 (`cd cj-web/backend && python main.py`)
-- Frontend: React + Vite (PWA), runs on port 5173 (`cd cj-web/frontend && npm run dev`), proxies `/api/*` to backend
-- ChromaDB: persistent at `cj-web/backend/data/chroma/` — three collections: cybersec_knowledge, cybersec_sources, chat_memory
-- SQLite: `cj-web/backend/data/cj_web.db` — sessions, messages, sources, unanswered
 
-## Startup sequence
-1. Backend seeds knowledge.json into ChromaDB on first run (only if collection is empty)
-2. Backend seeds DEFAULT_FEEDS into sources table
-3. APScheduler fetches RSS feeds every 6h in background
-4. Frontend dev server proxies /api/* to http://127.0.0.1:8000
+- **Backend**: FastAPI + Uvicorn on port `$PORT` (defaults 8000), Python 3.11
+- **Vector DB**: Qdrant Cloud (qdrant-client 1.18) — replaces local ChromaDB
+  - Collections: `cybersec_knowledge`, `cybersec_sources`, `chat_memory`
+  - API: `query_points()` for search (NOT the old `search()`), `FilterSelector` for deletes
+  - Cosine distance = `1.0 - r.score` (Qdrant returns similarity, old code expected distance)
+- **LLM**: Groq `llama-3.3-70b-versatile` via `groq` package
+- **Embeddings**: ChromaDB `DefaultEmbeddingFunction` (all-MiniLM-L6-v2, ONNX, local)
+- **Frontend**: React 18 + Vite on port 5173, proxies `/api` to backend in dev
 
-## Key decisions
-- RAG search happens before scope filter (same pattern as cj-ai terminal app)
-- ChromaDB uses DefaultEmbeddingFunction (ONNX all-MiniLM-L6-v2, ~79MB, downloaded on first run)
-- No external LLM API — responses are extracted/formatted from retrieved chunks
+## Key env vars (all secrets)
 
-**Why local-only:** user explicitly chose "محلي بالكامل" (fully local, no API).
+- `GROQ_API_KEY`
+- `QDRANT_URL`
+- `QDRANT_API_KEY`
+
+## Deployment targets
+
+- **Backend → Render**: `render.yaml` at repo root; `startCommand: python main.py`; port read from `$PORT`
+- **Frontend → Vercel**: root dir = `cj-web/frontend`; `VITE_API_URL` = Render backend URL; `vercel.json` handles SPA routing
+
+## Why
+
+Migrated from local ChromaDB to Qdrant Cloud so data persists across Render restarts (ephemeral filesystem). Groq chosen for free tier + speed.
+
+## How to apply
+
+- Any new vector operation: use `query_points()` not `search()`; delete uses `FilterSelector(filter=Filter(...))`
+- Port binding: always read `int(os.environ.get("PORT", 8000))` in `main.py`
+- Qdrant errors should propagate (no silent swallowing in `count()`) so startup fails clearly

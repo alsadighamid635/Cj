@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
@@ -7,13 +8,16 @@ DB_FILE = DATA_DIR / "cj_web.db"
 KNOWLEDGE_FILE = BASE_DIR.parent.parent / "cj-ai" / "knowledge" / "knowledge.json"
 LOG_FILE = DATA_DIR / "app.log"
 
-# ChromaDB collections
+# Qdrant Cloud
+QDRANT_URL     = os.environ.get("QDRANT_URL", "")
+QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "")
+
+# Vector collections (shared names used by both ChromaDB legacy and Qdrant)
 COLLECTION_KNOWLEDGE = "cybersec_knowledge"
 COLLECTION_SOURCES   = "cybersec_sources"
 COLLECTION_CHAT      = "chat_memory"
 
 # LLM (Groq)
-import os
 LLM_MODEL        = "llama-3.3-70b-versatile"
 LLM_MAX_TOKENS   = 1024
 LLM_TEMPERATURE  = 0.4

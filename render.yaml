@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: cj-ai-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: cj-web/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false          # set manually in Render dashboard
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false

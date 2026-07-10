@@ -36,6 +36,29 @@ cj-web/
       api.js         # Fetch helpers for /api/*
 ```
 
+## Deployment (Step-by-Step)
+
+### Backend → Render (free)
+1. Push this repo to GitHub
+2. Go to [render.com](https://render.com) → New → Web Service → connect your repo
+3. Render auto-detects `render.yaml` — just add the three env vars in the dashboard:
+   - `GROQ_API_KEY`
+   - `QDRANT_URL`
+   - `QDRANT_API_KEY`
+4. Deploy. Note your backend URL (e.g. `https://cj-ai-backend.onrender.com`)
+
+### Frontend → Vercel (free)
+1. Go to [vercel.com](https://vercel.com) → New Project → import your repo
+2. Set **Root Directory** to `cj-web/frontend`
+3. Add environment variable:
+   - `VITE_API_URL` = your Render backend URL (no trailing slash)
+4. Deploy
+
+> `vercel.json` is already configured for SPA routing.
+> The free Render tier sleeps after 15 min inactivity — first request may take ~30s to wake.
+
+---
+
 ## LLM Integration
 
 - **Provider**: Groq (`llama-3.3-70b-versatile`) — requires `GROQ_API_KEY` secret

@@ -1,4 +1,6 @@
-const BASE = "/api";
+// In production (Vercel) point to the Render backend via VITE_API_URL.
+// In dev the Vite proxy handles /api → localhost:8000.
+const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
 
 export async function sendMessage(message, sessionId) {
   const res = await fetch(`${BASE}/chat`, {

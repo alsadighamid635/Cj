@@ -1,86 +1,145 @@
 """
-Thin wrapper around ChromaDB.
+Thin wrapper around Qdrant Cloud (replaces local ChromaDB).
 Three collections:
   cybersec_knowledge  — seeded Q&A from knowledge.json
   cybersec_sources    — articles scraped from RSS / web
   chat_memory         — past conversation turns (for context)
+
+Embeddings: sentence-transformers all-MiniLM-L6-v2 (same model as before,
+run locally via the qdrant_client fastembed integration).
 """
 
-import chromadb
-from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-from pathlib import Path
+import os
+import uuid
+from qdrant_client import QdrantClient
+from qdrant_client.models import (
+    Distance, VectorParams, PointStruct,
+    Filter, FieldCondition, MatchValue,
+    FilterSelector,
+)
 from utils.logger import get_logger
 import config
 
 logger = get_logger()
-_client: chromadb.ClientAPI | None = None
-_ef = DefaultEmbeddingFunction()
+
+# Vector dimension for all-MiniLM-L6-v2
+VECTOR_DIM  = 384
+DISTANCE    = Distance.COSINE
+
+_client: QdrantClient | None = None
 
 
-def _get_client() -> chromadb.ClientAPI:
+def _get_client() -> QdrantClient:
     global _client
     if _client is None:
-        config.CHROMA_DIR.mkdir(parents=True, exist_ok=True)
-        _client = chromadb.PersistentClient(path=str(config.CHROMA_DIR))
-        logger.info("ChromaDB initialised at %s", config.CHROMA_DIR)
+        url = config.QDRANT_URL
+        api_key = config.QDRANT_API_KEY
+        if not url:
+            raise RuntimeError("QDRANT_URL is not set.")
+        _client = QdrantClient(url=url, api_key=api_key or None)
+        logger.info("Qdrant client initialised → %s", url)
     return _client
 
 
-def _col(name: str):
-    return _get_client().get_or_create_collection(
-        name=name,
-        embedding_function=_ef,
-        metadata={"hnsw:space": "cosine"},
-    )
+def _ensure_collection(name: str):
+    """Create collection if it doesn't exist."""
+    client = _get_client()
+    existing = {c.name for c in client.get_collections().collections}
+    if name not in existing:
+        client.create_collection(
+            collection_name=name,
+            vectors_config=VectorParams(size=VECTOR_DIM, distance=DISTANCE),
+        )
+        logger.info("Created Qdrant collection '%s'", name)
+
+
+# ── Embedding (local, same model chromadb used) ───────────────────────────────
+
+_embedder = None
+
+def _get_embedder():
+    global _embedder
+    if _embedder is None:
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+        _embedder = DefaultEmbeddingFunction()
+    return _embedder
+
+
+def _embed(texts: list[str]) -> list[list[float]]:
+    return _get_embedder()(texts)
+
+
+# ── Stable ID helper ──────────────────────────────────────────────────────────
+
+def _str_to_uuid(s: str) -> str:
+    """Derive a deterministic UUID v5 from an arbitrary string ID."""
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, s))
 
 
 # ── Public helpers ────────────────────────────────────────────────────────────
 
 def add_documents(collection_name: str, ids: list[str],
                   documents: list[str], metadatas: list[dict]):
-    col = _col(collection_name)
-    # Upsert in batches of 100 to stay within ChromaDB limits
+    _ensure_collection(collection_name)
+    client = _get_client()
+    vectors = _embed(documents)
     batch = 100
     for i in range(0, len(ids), batch):
-        col.upsert(
-            ids=ids[i:i+batch],
-            documents=documents[i:i+batch],
-            metadatas=metadatas[i:i+batch],
-        )
+        points = [
+            PointStruct(
+                id=_str_to_uuid(ids[i + j]),
+                vector=vectors[i + j],
+                payload={**metadatas[i + j], "_orig_id": ids[i + j],
+                         "_document": documents[i + j]},
+            )
+            for j in range(min(batch, len(ids) - i))
+        ]
+        client.upsert(collection_name=collection_name, points=points)
     logger.debug("Upserted %d docs into '%s'", len(ids), collection_name)
 
 
 def search(collection_name: str, query: str,
            n: int = config.MAX_RESULTS) -> list[dict]:
-    col = _col(collection_name)
-    if col.count() == 0:
+    _ensure_collection(collection_name)
+    client = _get_client()
+    total = count(collection_name)
+    if total == 0:
         return []
-    results = col.query(
-        query_texts=[query],
-        n_results=min(n, col.count()),
-        include=["documents", "metadatas", "distances"],
+    query_vec = _embed([query])[0]
+    response = client.query_points(
+        collection_name=collection_name,
+        query=query_vec,
+        limit=min(n, total),
+        with_payload=True,
     )
     hits = []
-    for doc, meta, dist in zip(
-        results["documents"][0],
-        results["metadatas"][0],
-        results["distances"][0],
-    ):
-        hits.append({"document": doc, "metadata": meta, "distance": dist})
+    for r in response.points:
+        payload  = dict(r.payload or {})
+        document = payload.pop("_document", "")
+        payload.pop("_orig_id", None)
+        # Qdrant score is cosine similarity (1=identical); convert to distance
+        hits.append({
+            "document": document,
+            "metadata": payload,
+            "distance": 1.0 - r.score,   # cosine distance compatible with old API
+        })
     return hits
 
 
 def search_all(query: str, n: int = config.MAX_RESULTS) -> list[dict]:
     """Search knowledge + sources + chat_memory and merge by distance."""
     hits = []
-    for col in (config.COLLECTION_KNOWLEDGE, config.COLLECTION_SOURCES, config.COLLECTION_CHAT):
+    for col in (config.COLLECTION_KNOWLEDGE, config.COLLECTION_SOURCES,
+                config.COLLECTION_CHAT):
         hits.extend(search(col, query, n))
     hits.sort(key=lambda h: h["distance"])
     return hits[:n]
 
 
 def count(collection_name: str) -> int:
-    return _col(collection_name).count()
+    _ensure_collection(collection_name)
+    info = _get_client().get_collection(collection_name)
+    return info.points_count or 0
 
 
 def total_knowledge() -> int:
@@ -91,8 +150,15 @@ def total_knowledge() -> int:
 
 def delete_by_source(source_id: int):
     """Remove all scraped documents belonging to a source."""
-    col = _col(config.COLLECTION_SOURCES)
-    results = col.get(where={"source_id": source_id})
-    if results["ids"]:
-        col.delete(ids=results["ids"])
-        logger.info("Deleted %d docs for source_id=%d", len(results["ids"]), source_id)
+    client = _get_client()
+    _ensure_collection(config.COLLECTION_SOURCES)
+    client.delete(
+        collection_name=config.COLLECTION_SOURCES,
+        points_selector=FilterSelector(
+            filter=Filter(
+                must=[FieldCondition(key="source_id",
+                                     match=MatchValue(value=source_id))]
+            )
+        ),
+    )
+    logger.info("Deleted docs for source_id=%d from Qdrant", source_id)
