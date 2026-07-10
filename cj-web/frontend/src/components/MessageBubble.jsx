@@ -38,7 +38,7 @@ export default function MessageBubble({ message }) {
 
   return (
     <div className={`message-row ${role}`}>
-      {!isUser && <div className="message-avatar">⚡</div>}
+      {!isUser && <div className="message-avatar"><img src="/logo.jpg" alt="249shadow" /></div>}
 
       <div className="message-body">
         <div className="message-bubble">
