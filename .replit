@@ -1,10 +1,10 @@
-modules = ["python-3.12", "nodejs-20", "web"]
+modules = ["nodejs-20", "web", "python-3.11"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["rapidfuzz-cpp", "taskflow"]
+packages = ["libxcrypt", "rapidfuzz-cpp", "taskflow"]
 
 [workflows]
 runButton = "Project"

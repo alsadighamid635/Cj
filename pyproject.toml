@@ -2,11 +2,11 @@
 name = "repl-nix-workspace"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "apscheduler>=3.11.3",
     "beautifulsoup4>=4.15.0",
-    "chromadb>=1.5.9",
+    "chromadb>=0.5.23",
     "fastapi>=0.139.0",
     "feedparser>=6.0.12",
     "pytest>=9.1.1",
