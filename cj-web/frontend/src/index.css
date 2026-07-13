@@ -1768,26 +1768,27 @@ body {
 .btn-del-confirm:hover { background: #dc2626; }
 .btn-del-confirm:disabled { opacity: .5; cursor: not-allowed; }
 
-/* ── Secret click hint pulse (invisible element on auth page) ── */
+/* ── Secret click trigger (disguised as copyright dot) ── */
 .secret-trigger {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 28px;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
+  background: var(--text-dim);
+  opacity: 0.35;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  /* invisible by default */
-  background: transparent;
+  vertical-align: middle;
+  margin: 0 3px;
+  transition: opacity .2s;
 }
+.secret-trigger:hover { opacity: 0.55; }
 .secret-trigger.activated {
-  animation: secretPulse .4s ease;
+  animation: secretPulse .35s ease;
 }
 @keyframes secretPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
-  70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
-  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.6); opacity: 1; }
+  70%  { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); opacity: 0.35; }
 }

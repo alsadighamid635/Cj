@@ -291,15 +291,16 @@ export default function AuthPage({ onAuthenticated }) {
             ))}
           </div>
 
-          {/* Secret trigger — invisible dot at the bottom of the card.
-              Click it 7 times within 8 seconds to open the admin login. */}
-          <div
-            className={`secret-trigger ${secretPulse ? "activated" : ""}`}
-            onClick={handleSecretClick}
-            aria-hidden="true"
-          />
-
-          <p className="auth-footer">{t.footer}</p>
+          {/* Footer — the small © dot is the secret trigger (7 clicks = admin login) */}
+          <p className="auth-footer">
+            <span
+              className={`secret-trigger ${secretPulse ? "activated" : ""}`}
+              onClick={handleSecretClick}
+              aria-hidden="true"
+              title=""
+            />
+            {t.footer}
+          </p>
         </div>
       </div>
 
