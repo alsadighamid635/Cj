@@ -78,9 +78,6 @@ cj-web/
 - RSS learning runs every 6 hours via APScheduler (configurable in `config.py`).
 - The backend fails fast at startup if `GROQ_API_KEY` or `QDRANT_URL` are missing — check workflow logs for a clear error listing what's absent.
 
-## Known issue (as of 2026-07-13)
-
-The backend currently fails to start: Qdrant Cloud returns `403 Forbidden` on `get_collections()` with the configured `QDRANT_URL`/`QDRANT_API_KEY`. The URL was confirmed correct by the user; the API key is likely stale, regenerated, or scoped to a different cluster. Ask the user to regenerate/verify the Qdrant API key for that cluster and update the `QDRANT_API_KEY` secret, then restart the "Backend (FastAPI)" workflow.
 
 ## User preferences
 
