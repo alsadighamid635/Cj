@@ -1,46 +1,49 @@
 # CJ-AI — Cybersecurity AI Assistant
 
-An Arabic/English cybersecurity AI chat assistant built with a RAG (Retrieval-Augmented Generation) architecture. Users register/login and ask questions about penetration testing, malware analysis, networking, CTF challenges, and more.
+A bilingual (Arabic/English) cybersecurity AI assistant using a RAG (Retrieval-Augmented Generation) architecture. Provides context-aware answers on penetration testing, malware analysis, and information security, with a strict "cybersecurity-only" scope guard.
 
-## Stack
+## Project structure
 
-| Layer | Technology |
-|---|---|
-| Backend | FastAPI + Uvicorn (port 8000) |
-| Frontend | React + Vite (port 5173) |
-| Vector DB | Qdrant Cloud |
-| LLM | Groq (llama-3.3-70b-versatile) |
-| Embeddings | sentence-transformers (all-MiniLM-L6-v2) |
-| Auth | JWT (bcrypt passwords, 30-day tokens) |
-| Storage | SQLite (`cj-web/backend/data/cj_web.db`) |
+```
+cj-web/
+  backend/    FastAPI server, RAG pipeline, scrapers (port 8000)
+  frontend/   React 18 + Vite UI (port 5173)
+cj-ai/        Terminal/CLI version of the assistant
+```
 
-## Running on Replit
+## How to run
 
 Two workflows must both be running:
 
-- **Backend (FastAPI):** `cd cj-web/backend && python main.py` → port 8000
-- **Frontend (Vite):** `cd cj-web/frontend && npm run dev` → port 5173
+| Workflow | Command | Port |
+|---|---|---|
+| Backend (FastAPI) | `cd cj-web/backend && python main.py` | 8000 |
+| Frontend (Vite) | `cd cj-web/frontend && npm run dev` | 5173 |
 
-The frontend proxies `/api/*` to the backend, so the preview pane runs on port **5173**.
+The frontend proxies API calls to the backend. Open the app on port **5173**.
 
-## Required Secrets
+## Required secrets
 
-| Secret | Where to get it |
+All set as Replit Secrets:
+
+| Secret | Purpose |
 |---|---|
-| `QDRANT_URL` | Qdrant Cloud dashboard |
-| `QDRANT_API_KEY` | Qdrant Cloud dashboard |
-| `GROQ_API_KEY` | console.groq.com |
-| `SESSION_SECRET` | Any random string (already set) |
+| `SESSION_SECRET` | JWT signing key |
+| `GROQ_API_KEY` | Groq LLM (llama-3.3-70b-versatile) |
+| `QDRANT_URL` | Qdrant Cloud cluster URL |
+| `QDRANT_API_KEY` | Qdrant Cloud API key |
 
-## Project Structure
+## Tech stack
 
-```
-cj-ai/          # Knowledge base (knowledge.json) + CLI core
-cj-web/
-  backend/      # FastAPI app — api/, core/, database/, utils/
-  frontend/     # React app — src/components/, src/api.js
-```
+- **Backend:** Python 3.11, FastAPI, Uvicorn, APScheduler
+- **Frontend:** React 18, Vite, react-markdown
+- **LLM:** Groq (`llama-3.3-70b-versatile`)
+- **Vector DB:** Qdrant Cloud with `all-MiniLM-L6-v2` embeddings (fastembed/ONNX)
+- **Auth:** JWT (30-day tokens), bcrypt passwords, SQLite session storage
+- **Auto-learning:** RSS scraper runs every 6 h (Hacker News, Krebs, SANS, SecurityWeek, NVD, BleepingComputer)
 
-## User Preferences
+## Admin
 
-- Keep existing project structure and stack unchanged unless explicitly asked.
+Default admin username: `249shadow` (override with `ADMIN_USERNAME` secret). Admin endpoints are at `/api/admin/`.
+
+## User preferences
