@@ -4,9 +4,12 @@
 
 ## Stack
 
-- **Backend**: FastAPI + ChromaDB (RAG/vector store) + SQLite, running on port 8000
+- **Backend**: FastAPI + Qdrant Cloud (RAG/vector store) + SQLite, running on port 8000
 - **Frontend**: React 18 + Vite, running on port 5173 (proxies `/api` to backend)
-- **Embeddings**: `all-MiniLM-L6-v2` via ChromaDB's default embedding function (ONNX)
+- **Embeddings**: `all-MiniLM-L6-v2` via `sentence-transformers`, run locally
+- **LLM**: Groq (`llama-3.3-70b-versatile`)
+
+Requires three secrets (Replit Secrets): `GROQ_API_KEY`, `QDRANT_URL`, `QDRANT_API_KEY`.
 
 ## How to run
 
@@ -70,10 +73,14 @@ cj-web/
 
 ## Notes
 
-- The backend seeds 60 built-in Q&A entries into ChromaDB on first startup (from `cj-ai/knowledge/knowledge.json` if present; the app skips seeding gracefully if the file is missing).
-- ChromaDB stores embeddings locally at `cj-web/backend/data/chroma/`. If you upgrade the `chromadb` package across a major version, delete that directory so it reinitialises cleanly.
-- The installed `chromadb` version is **0.5.23** (the latest 1.x builds are currently blocked by the Replit package firewall).
+- The backend seeds 60 built-in Q&A entries into Qdrant on first startup (from `cj-ai/knowledge/knowledge.json` if present; the app skips seeding gracefully if the file is missing).
+- Vectors live in Qdrant Cloud (three collections: `cybersec_knowledge`, `cybersec_sources`, `chat_memory`), not stored locally.
 - RSS learning runs every 6 hours via APScheduler (configurable in `config.py`).
+- The backend fails fast at startup if `GROQ_API_KEY` or `QDRANT_URL` are missing — check workflow logs for a clear error listing what's absent.
+
+## Known issue (as of 2026-07-13)
+
+The backend currently fails to start: Qdrant Cloud returns `403 Forbidden` on `get_collections()` with the configured `QDRANT_URL`/`QDRANT_API_KEY`. The URL was confirmed correct by the user; the API key is likely stale, regenerated, or scoped to a different cluster. Ask the user to regenerate/verify the Qdrant API key for that cluster and update the `QDRANT_API_KEY` secret, then restart the "Backend (FastAPI)" workflow.
 
 ## User preferences
 
