@@ -6,29 +6,39 @@
  * every request. The backend uses it to scope conversations to that
  * account only — no other user can read or modify them.
  *
- * VITE_API_URL is set on Vercel (points to the Render backend).
+ * VITE_API_URL is set on Vercel/Render (points to the backend host).
  * In local dev, Vite proxies /api → localhost:8000 automatically.
  */
 
 const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
-const TOKEN_KEY = "cj_auth_token";
+const TOKEN_KEY   = "cj_auth_token";
+const SESSION_KEY = "cj_auth_token_session"; // sessionStorage key (no-remember)
 
-/** Default timeout for most requests. Chat gets a longer timeout (see sendMessage). */
+/** Default timeout for most requests. Chat gets a longer timeout. */
 const REQUEST_TIMEOUT_MS = 30_000;
 const CHAT_TIMEOUT_MS    = 60_000;
 
-// ── Token storage ────────────────────────────────────────────────────────────
+// ── Token storage ─────────────────────────────────────────────────────────────
+// When remember=true  → localStorage  (survives browser restarts)
+// When remember=false → sessionStorage (cleared when the tab/browser closes)
 
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(SESSION_KEY) || null;
 }
 
-export function setToken(token) {
-  localStorage.setItem(TOKEN_KEY, token);
+export function setToken(token, remember = true) {
+  if (remember) {
+    localStorage.setItem(TOKEN_KEY, token);
+    sessionStorage.removeItem(SESSION_KEY);
+  } else {
+    sessionStorage.setItem(SESSION_KEY, token);
+    localStorage.removeItem(TOKEN_KEY);
+  }
 }
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 /**
@@ -119,7 +129,6 @@ export async function fetchMe() {
 
 export async function sendMessage(message, sessionId, file = null) {
   // Always use multipart/form-data so the backend Form() fields work with or without a file.
-  // Do NOT set Content-Type manually — the browser must set it with the correct boundary.
   const fd = new FormData();
   fd.append("message", message);
   if (sessionId) fd.append("session_id", sessionId);
@@ -210,4 +219,10 @@ export async function loadStats() {
   } catch {
     return {};
   }
+}
+
+export async function loadAdminUsers() {
+  const res = await authFetch("/admin/users");
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
+  return res.json();
 }

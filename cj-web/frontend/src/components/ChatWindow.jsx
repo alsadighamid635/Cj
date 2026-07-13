@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble.jsx";
+import { useLang } from "../context/LangContext.jsx";
 
 export default function ChatWindow({ messages, loading, suggestions, onSuggestion }) {
+  const { t } = useLang();
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -12,9 +14,11 @@ export default function ChatWindow({ messages, loading, suggestions, onSuggestio
     return (
       <div className="chat-window">
         <div className="chat-empty">
-          <div className="chat-empty-icon"><img src="/logo.jpg" alt="249shadow" /></div>
+          <div className="chat-empty-icon">
+            <img src="/logo.jpg" alt="249shadow" />
+          </div>
           <h2>CJ-AI</h2>
-          <p>Your cybersecurity AI assistant. Ask anything about network security, malware, CTF, Linux, cryptography, and more.</p>
+          <p>{t.chatDesc}</p>
           <div className="chat-suggestions">
             {suggestions.map(s => (
               <button key={s} className="chat-suggestion" onClick={() => onSuggestion(s)}>
@@ -35,7 +39,9 @@ export default function ChatWindow({ messages, loading, suggestions, onSuggestio
 
       {loading && (
         <div className="message-row assistant">
-          <div className="message-avatar"><img src="/logo.jpg" alt="249shadow" /></div>
+          <div className="message-avatar">
+            <img src="/logo.jpg" alt="249shadow" />
+          </div>
           <div className="message-body">
             <div className="message-bubble">
               <div className="typing-indicator">

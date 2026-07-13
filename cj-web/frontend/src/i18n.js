@@ -1,0 +1,178 @@
+/**
+ * CJ-AI — Arabic / English UI translations.
+ * Arabic is the default language (RTL). The user can toggle to English.
+ */
+
+export const T = {
+  ar: {
+    dir: "rtl",
+    lang: "ar",
+    // ── Auth ──────────────────────────────────────────────────────
+    welcomeTo:       "مرحبًا بك في",
+    loginTitle:      "سجل الدخول للوصول إلى حسابك",
+    signupTitle:     "أنشئ حسابك الخاص للبدء",
+    usernameOrEmail: "اسم المستخدم أو البريد الإلكتروني",
+    usernameLabel:   "اسم المستخدم",
+    emailLabel:      "البريد الإلكتروني",
+    passwordLabel:   "كلمة المرور",
+    passwordMin:     "كلمة المرور (٨ أحرف على الأقل)",
+    confirmPassword: "تأكيد كلمة المرور",
+    rememberMe:      "تذكرني",
+    forgotPassword:  "نسيت كلمة المرور؟",
+    loginBtn:        "تسجيل الدخول",
+    loggingIn:       "جارٍ الدخول...",
+    signupBtn:       "إنشاء حساب",
+    creatingAccount: "جارٍ إنشاء الحساب...",
+    haveAccount:     "لدي حساب بالفعل — تسجيل الدخول",
+    createAccount:   "إنشاء حساب جديد",
+    orDivider:       "أو",
+    footer:          "© 2026 249Shadow AI. جميع الحقوق محفوظة.",
+    brandDesc:       "مساعدك الذكي في عالم الأمن السيبراني",
+    brandSub:        "تحليل · حماية · استجابة · تعلم",
+    // ── Validation errors ─────────────────────────────────────────
+    fillAll:         "الرجاء تعبئة جميع الحقول.",
+    fillLoginFields: "الرجاء إدخال اسم المستخدم وكلمة المرور.",
+    passwordMin8:    "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.",
+    passwordsNoMatch:"كلمتا المرور غير متطابقتين.",
+    loginError:      "تعذر تسجيل الدخول. حاول مرة أخرى.",
+    signupError:     "تعذر إنشاء الحساب. حاول مرة أخرى.",
+    forgotContact:   "تواصل مع الدعم لاستعادة كلمة المرور.",
+    // ── Sidebar ───────────────────────────────────────────────────
+    newChat:         "محادثة جديدة",
+    conversations:   "المحادثات",
+    noConversations: "لا توجد محادثات بعد",
+    learningSources: "مصادر التعلم",
+    // ── Chat window ───────────────────────────────────────────────
+    chatDesc:        "مساعدك الذكي في الأمن السيبراني. اسأل عن أمن الشبكات، البرمجيات الخبيثة، CTF، لينكس، التشفير وغير ذلك.",
+    // ── Input bar ─────────────────────────────────────────────────
+    inputPlaceholder:"اسأل عن الأمن السيبراني… (Enter للإرسال، Shift+Enter لسطر جديد)",
+    inputWithFile:   "اسأل عن هذا الملف… (Enter للإرسال)",
+    inputHint:       "CJ-AI · متخصص في الأمن السيبراني وأمن المعلومات",
+    attachTitle:     "إرفاق صورة أو مستند",
+    removeFile:      "إزالة الملف",
+    fileTypeError:   "نوع الملف غير مدعوم. المسموح به: JPEG · PNG · GIF · WebP · PDF · TXT · DOCX",
+    fileSizeError:   "الملف كبير جداً. الحد الأقصى",
+    analyseFile:     "تحليل هذا الملف:",
+    // ── Topbar ────────────────────────────────────────────────────
+    logoutBtn:       "خروج",
+    logoutTooltip:   "تسجيل الخروج من الحساب",
+    adminPanel:      "الإدارة",
+    vectors:         "متجه",
+    // ── Confidence ───────────────────────────────────────────────
+    confident:       "✓ موثوق",
+    partial:         "~ جزئي",
+    learning:        "? تعلم",
+    // ── Admin page ────────────────────────────────────────────────
+    adminTitle:      "إدارة المستخدمين",
+    adminSubtitle:   "المستخدمون المسجلون في النظام",
+    usernameCol:     "اسم المستخدم",
+    emailCol:        "البريد الإلكتروني",
+    createdCol:      "تاريخ التسجيل",
+    loadingUsers:    "جارٍ تحميل البيانات...",
+    noUsers:         "لا يوجد مستخدمون بعد.",
+    totalUsers:      "إجمالي المستخدمين",
+    closeBtn:        "إغلاق",
+    // ── Suggestions ───────────────────────────────────────────────
+    suggestions: [
+      "ما هو حقن SQL؟",
+      "كيف يعمل nmap؟",
+      "اشرح مثلث CIA",
+      "ما هو Buffer Overflow؟",
+      "كيف تكشف البرمجيات الخبيثة؟",
+      "ما هو Kerberoasting؟",
+    ],
+    // ── Features strip (auth page) ────────────────────────────────
+    features: [
+      { icon: "🧠", label: "ذكاء اصطناعي" },
+      { icon: "📊", label: "تحليل متقدم" },
+      { icon: "🛡️", label: "حماية ذكية" },
+      { icon: "⚡", label: "استجابة فورية" },
+    ],
+  },
+
+  en: {
+    dir: "ltr",
+    lang: "en",
+    // ── Auth ──────────────────────────────────────────────────────
+    welcomeTo:       "Welcome to",
+    loginTitle:      "Sign in to access your account",
+    signupTitle:     "Create your account to get started",
+    usernameOrEmail: "Username or email",
+    usernameLabel:   "Username",
+    emailLabel:      "Email",
+    passwordLabel:   "Password",
+    passwordMin:     "Password (min. 8 characters)",
+    confirmPassword: "Confirm password",
+    rememberMe:      "Remember me",
+    forgotPassword:  "Forgot password?",
+    loginBtn:        "Sign In",
+    loggingIn:       "Signing in...",
+    signupBtn:       "Create Account",
+    creatingAccount: "Creating account...",
+    haveAccount:     "I already have an account — Sign In",
+    createAccount:   "Create New Account",
+    orDivider:       "or",
+    footer:          "© 2026 249Shadow AI. All rights reserved.",
+    brandDesc:       "Your intelligent cybersecurity AI assistant",
+    brandSub:        "Analyse · Protect · Respond · Learn",
+    // ── Validation errors ─────────────────────────────────────────
+    fillAll:         "Please fill in all fields.",
+    fillLoginFields: "Please enter your username and password.",
+    passwordMin8:    "Password must be at least 8 characters.",
+    passwordsNoMatch:"Passwords do not match.",
+    loginError:      "Login failed. Please try again.",
+    signupError:     "Could not create account. Please try again.",
+    forgotContact:   "Contact support to recover your password.",
+    // ── Sidebar ───────────────────────────────────────────────────
+    newChat:         "New Chat",
+    conversations:   "Conversations",
+    noConversations: "No conversations yet",
+    learningSources: "Learning Sources",
+    // ── Chat window ───────────────────────────────────────────────
+    chatDesc:        "Your cybersecurity AI assistant. Ask anything about network security, malware, CTF, Linux, cryptography, and more.",
+    // ── Input bar ─────────────────────────────────────────────────
+    inputPlaceholder:"Ask about cybersecurity… (Enter to send, Shift+Enter for new line)",
+    inputWithFile:   "Ask about this file… (Enter to send)",
+    inputHint:       "CJ-AI · Specialized in cybersecurity & information security",
+    attachTitle:     "Attach image or document",
+    removeFile:      "Remove file",
+    fileTypeError:   "Unsupported type. Allowed: JPEG · PNG · GIF · WebP · PDF · TXT · DOCX",
+    fileSizeError:   "File too large. Max",
+    analyseFile:     "Analyse this file:",
+    // ── Topbar ────────────────────────────────────────────────────
+    logoutBtn:       "Logout",
+    logoutTooltip:   "Sign out of your account",
+    adminPanel:      "Admin",
+    vectors:         "vectors",
+    // ── Confidence ───────────────────────────────────────────────
+    confident:       "✓ confident",
+    partial:         "~ partial",
+    learning:        "? learning",
+    // ── Admin page ────────────────────────────────────────────────
+    adminTitle:      "User Management",
+    adminSubtitle:   "Users registered in the system",
+    usernameCol:     "Username",
+    emailCol:        "Email",
+    createdCol:      "Registered",
+    loadingUsers:    "Loading...",
+    noUsers:         "No users yet.",
+    totalUsers:      "Total Users",
+    closeBtn:        "Close",
+    // ── Suggestions ───────────────────────────────────────────────
+    suggestions: [
+      "What is SQL injection?",
+      "How does nmap work?",
+      "Explain the CIA Triad",
+      "What is a buffer overflow?",
+      "How to detect malware?",
+      "What is Kerberoasting?",
+    ],
+    // ── Features strip (auth page) ────────────────────────────────
+    features: [
+      { icon: "🧠", label: "AI-Powered" },
+      { icon: "📊", label: "Deep Analysis" },
+      { icon: "🛡️", label: "Smart Defense" },
+      { icon: "⚡", label: "Instant Reply" },
+    ],
+  },
+};

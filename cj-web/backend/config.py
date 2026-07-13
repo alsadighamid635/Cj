@@ -27,6 +27,11 @@ COLLECTION_KNOWLEDGE = "cybersec_knowledge"
 COLLECTION_SOURCES   = "cybersec_sources"
 COLLECTION_CHAT      = "chat_memory"
 
+# ── Admin ─────────────────────────────────────────────────────────────────────
+
+# Username of the system owner — only this account can access /api/admin/users
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "249shadow")
+
 # ── Authentication ────────────────────────────────────────────────────────────
 
 JWT_SECRET      = os.environ.get("SESSION_SECRET", "")

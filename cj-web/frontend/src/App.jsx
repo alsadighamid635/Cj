@@ -5,24 +5,16 @@ import InputBar from "./components/InputBar.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import SourcePanel from "./components/SourcePanel.jsx";
 import AuthPage from "./components/AuthPage.jsx";
+import AdminPage from "./components/AdminPage.jsx";
+import { useLang } from "./context/LangContext.jsx";
 import {
   sendMessage, loadHistory, loadSessions, deleteSession, loadStats,
   fetchMe, getToken, clearToken, AuthError,
 } from "./api.js";
 
-const SUGGESTIONS = [
-  "What is SQL injection?",
-  "How does nmap work?",
-  "Explain the CIA Triad",
-  "What is a buffer overflow?",
-  "How to detect malware?",
-  "What is Kerberoasting?",
-];
+// Admin username — must match config.ADMIN_USERNAME on the backend
+const ADMIN_USERNAME = "249shadow";
 
-/**
- * Current chat session — resets when the tab is closed.
- * A fresh session ID is generated when the user clicks "New Chat".
- */
 function getOrCreateSessionId() {
   const KEY = "cj_session_id";
   let id = sessionStorage.getItem(KEY);
@@ -34,8 +26,10 @@ function getOrCreateSessionId() {
 }
 
 export default function App() {
-  // ── Auth state ────────────────────────────────────────────────────────────
-  const [user, setUser]           = useState(null);
+  const { t, lang, setLang } = useLang();
+
+  // ── Auth state ──────────────────────────────────────────────────
+  const [user, setUser]               = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   const [sessionId, setSessionId]     = useState(getOrCreateSessionId);
@@ -45,13 +39,17 @@ export default function App() {
   const [sessions, setSessions]       = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 640);
   const [showSources, setShowSources] = useState(false);
+  const [showAdmin, setShowAdmin]     = useState(false);
   const [stats, setStats]             = useState({});
+
+  const isAdmin = user && user.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
 
   const logout = useCallback(() => {
     clearToken();
     setUser(null);
     setMessages([]);
     setSessions([]);
+    setShowAdmin(false);
   }, []);
 
   // Validate any stored token on first load
@@ -73,7 +71,7 @@ export default function App() {
     loadHistory(sessionId).then(d => setMessages(d.messages || []));
   }, [sessionId, user]);
 
-  // Load this user's session list and global stats once authenticated
+  // Load session list and global stats once authenticated
   useEffect(() => {
     if (!user) return;
     loadSessions().then(d => setSessions(d.sessions || []));
@@ -82,14 +80,12 @@ export default function App() {
 
   async function handleSend(text, attachment = null) {
     setError(null);
-
-    // attachment is { raw: File, name, type, size, preview } | null
     const rawFile = attachment?.raw ?? null;
 
     const userMsg = {
-      role:      "user",
-      content:   text,
-      timestamp: new Date().toISOString(),
+      role:       "user",
+      content:    text,
+      timestamp:  new Date().toISOString(),
       attachment: attachment
         ? { name: attachment.name, type: attachment.type, preview: attachment.preview }
         : null,
@@ -109,10 +105,7 @@ export default function App() {
       setMessages(prev => [...prev, botMsg]);
       loadSessions().then(d => setSessions(d.sessions || []));
     } catch (err) {
-      if (err instanceof AuthError) {
-        logout();
-        return;
-      }
+      if (err instanceof AuthError) { logout(); return; }
       const msg = err?.message && typeof err.message === "string"
         ? err.message
         : "An unexpected error occurred. Please try again.";
@@ -150,16 +143,14 @@ export default function App() {
     setSessions(prev => prev.filter(s => s.id !== id));
   }
 
-  if (!authChecked) {
-    return <div className="app-layout" />;
-  }
+  if (!authChecked) return <div className="app-layout" />;
 
   if (!user) {
     return <AuthPage onAuthenticated={(data) => setUser(data)} />;
   }
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" dir={t.dir}>
       <Sidebar
         open={sidebarOpen}
         sessions={sessions}
@@ -176,20 +167,50 @@ export default function App() {
           <button className="btn-menu" onClick={() => setSidebarOpen(o => !o)}>☰</button>
           <span className="topbar-title">CJ-AI</span>
           <span className="topbar-badge">Cybersecurity</span>
+
           <div className="topbar-right">
             <div className="status-dot" title="Online" />
             {stats.total_vectors != null && (
-              <span className="topbar-stats">{stats.total_vectors} vectors</span>
+              <span className="topbar-stats">{stats.total_vectors} {t.vectors}</span>
             )}
             <span className="topbar-user" title={user.email}>👤 {user.username}</span>
-            <button className="btn-logout" onClick={logout} title="Log out">⏻</button>
+
+            {/* Language toggle */}
+            <button
+              className="btn-lang"
+              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+              title={lang === "ar" ? "Switch to English" : "التبديل إلى العربية"}
+            >
+              {lang === "ar" ? "EN" : "ع"}
+            </button>
+
+            {/* Admin panel button — visible only to the system owner */}
+            {isAdmin && (
+              <button
+                className="btn-admin"
+                onClick={() => setShowAdmin(true)}
+                title={t.adminPanel}
+              >
+                ⚙️ {t.adminPanel}
+              </button>
+            )}
+
+            {/* Logout */}
+            <button
+              className="btn-logout"
+              onClick={logout}
+              title={t.logoutTooltip}
+            >
+              <span className="btn-logout-icon">⏻</span>
+              <span className="btn-logout-label">{t.logoutBtn}</span>
+            </button>
           </div>
         </div>
 
         <ChatWindow
           messages={messages}
           loading={loading}
-          suggestions={SUGGESTIONS}
+          suggestions={t.suggestions}
           onSuggestion={handleSend}
         />
 
@@ -204,6 +225,8 @@ export default function App() {
           }}
         />
       )}
+
+      {showAdmin && <AdminPage onClose={() => setShowAdmin(false)} />}
     </div>
   );
 }

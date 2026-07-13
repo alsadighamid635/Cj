@@ -2,21 +2,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useLang } from "../context/LangContext.jsx";
 
-/** Format a ISO timestamp to HH:MM. */
 function formatTime(ts) {
   if (!ts) return "";
   try {
     return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
-/**
- * Parse a markdown-style source badge "[Label](URL)" into its parts.
- * Falls back gracefully if the format is unexpected.
- */
 function parseSource(src) {
   const labelMatch = src.match(/^\[(.+?)\]/);
   const urlMatch   = src.match(/\((.+?)\)$/);
@@ -26,7 +20,6 @@ function parseSource(src) {
   };
 }
 
-/** Render fenced code blocks with syntax highlighting; inline code as-is. */
 const CODE_RENDERER = {
   code({ node, inline, className, children, ...props }) {
     const lang = /language-(\w+)/.exec(className || "")?.[1];
@@ -47,23 +40,13 @@ const CODE_RENDERER = {
   },
 };
 
-const CONFIDENCE_LABELS = {
-  high:   "✓ confident",
-  medium: "~ partial",
-  low:    "? learning",
-};
-
 function AttachmentPreview({ attachment }) {
   if (!attachment) return null;
   const isImage = attachment.type?.startsWith("image/");
   return (
     <div className="msg-attachment">
       {isImage && attachment.preview ? (
-        <img
-          src={attachment.preview}
-          alt={attachment.name}
-          className="msg-attachment-img"
-        />
+        <img src={attachment.preview} alt={attachment.name} className="msg-attachment-img" />
       ) : (
         <div className="msg-attachment-doc">
           <span className="msg-attachment-icon">
@@ -78,8 +61,15 @@ function AttachmentPreview({ attachment }) {
 }
 
 export default function MessageBubble({ message }) {
+  const { t } = useLang();
   const { role, content, confidence, sources, timestamp, attachment } = message;
   const isUser = role === "user";
+
+  const CONFIDENCE_LABELS = {
+    high:   t.confident,
+    medium: t.partial,
+    low:    t.learning,
+  };
 
   return (
     <div className={`message-row ${role}`}>
@@ -97,7 +87,7 @@ export default function MessageBubble({ message }) {
               {content && <span>{content}</span>}
             </>
           ) : (
-            <div className="markdown">
+            <div className="markdown" dir="auto">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={CODE_RENDERER}>
                 {content}
               </ReactMarkdown>

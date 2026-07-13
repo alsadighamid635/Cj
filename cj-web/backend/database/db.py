@@ -196,6 +196,13 @@ class Database:
         ).fetchone()
         return dict(row) if row else None
 
+    def list_all_users(self) -> list[dict]:
+        """Return all users ordered by creation date (newest first). For admin use only."""
+        rows = self._conn().execute(
+            "SELECT id, username, email, created_at FROM users ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     # ── Messages ──────────────────────────────────────────────────────────────
 
     def save_message(

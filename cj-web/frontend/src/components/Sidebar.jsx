@@ -1,8 +1,12 @@
+import { useLang } from "../context/LangContext.jsx";
+
 export default function Sidebar({
   open, sessions, activeId, onNew, onSwitch, onDelete, onSourcesClick, showSourcesActive,
 }) {
+  const { t } = useLang();
+
   return (
-    <aside className={`sidebar ${open ? "" : "closed"}`}>
+    <aside className={`sidebar ${open ? "" : "closed"}`} dir={t.dir}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <img src="/logo.jpg" alt="249shadow" className="sidebar-logo-icon" />
@@ -11,15 +15,15 @@ export default function Sidebar({
       </div>
 
       <button className="btn-new-chat" onClick={onNew}>
-        ✏️ New Chat
+        ✏️ {t.newChat}
       </button>
 
-      <div className="sidebar-section-title">Conversations</div>
+      <div className="sidebar-section-title">{t.conversations}</div>
 
       <div className="session-list">
         {sessions.length === 0 && (
           <div style={{ padding: "8px", fontSize: "12px", color: "var(--text-dim)" }}>
-            No conversations yet
+            {t.noConversations}
           </div>
         )}
         {sessions.map(s => (
@@ -27,15 +31,15 @@ export default function Sidebar({
             key={s.id}
             className={`session-item ${s.id === activeId ? "active" : ""}`}
             onClick={() => onSwitch(s.id)}
-            title={s.title || "New Chat"}
+            title={s.title || t.newChat}
           >
             <span className="session-title">
-              💬 {s.title && s.title !== "New Chat" ? s.title : "New Chat"}
+              💬 {s.title && s.title !== "New Chat" ? s.title : t.newChat}
             </span>
             <button
               className="session-del"
               onClick={e => { e.stopPropagation(); onDelete(s.id); }}
-              title="Delete"
+              title="×"
             >
               ×
             </button>
@@ -48,7 +52,7 @@ export default function Sidebar({
           className={`btn-sources ${showSourcesActive ? "active" : ""}`}
           onClick={onSourcesClick}
         >
-          🌐 Learning Sources
+          🌐 {t.learningSources}
         </button>
       </div>
     </aside>
