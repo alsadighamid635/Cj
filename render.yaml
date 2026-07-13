@@ -6,12 +6,14 @@ services:
     plan: free
     rootDir: cj-web/backend
     buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     envVars:
+      - key: SESSION_SECRET
+        sync: false          # set manually in Render dashboard
       - key: GROQ_API_KEY
         sync: false          # set manually in Render dashboard
       - key: QDRANT_URL
-        sync: false
+        sync: false          # set manually in Render dashboard
       - key: QDRANT_API_KEY
-        sync: false
+        sync: false          # set manually in Render dashboard
