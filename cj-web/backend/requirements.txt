@@ -12,3 +12,4 @@ qdrant-client
 pyjwt
 bcrypt
 email-validator
+psycopg2-binary

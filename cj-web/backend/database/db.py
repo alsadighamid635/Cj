@@ -1,14 +1,15 @@
 """
-SQLite persistence layer for CJ-AI Web.
+PostgreSQL persistence layer for CJ-AI Web.
 
 Design notes:
-  - Uses threading.local() so each thread gets its own connection,
-    eliminating race conditions under concurrent async/threaded requests.
-  - WAL journal mode allows concurrent readers without blocking writers.
+  - Uses a ThreadedConnectionPool so each thread gets its own connection
+    from the pool, eliminating race conditions under concurrent requests.
   - All public methods are the single source of truth for DB access —
     no raw SQL lives outside this module.
+  - RealDictCursor makes every row a plain dict, matching the old SQLite API.
 
 Tables:
+  users         — registered accounts
   sessions      — chat sessions (id, title, user_id, created_at)
   messages      — individual messages per session
   sources       — RSS feeds and web pages to scrape
@@ -17,10 +18,14 @@ Tables:
 """
 
 import json
-import sqlite3
+import os
 import threading
-from pathlib import Path
 from datetime import datetime
+
+import psycopg2
+import psycopg2.extras
+import psycopg2.pool
+
 from utils.logger import get_logger
 
 logger = get_logger()
@@ -31,177 +36,234 @@ def _now() -> str:
 
 
 class Database:
-    """Thread-safe SQLite wrapper using per-thread connections."""
+    """Thread-safe PostgreSQL wrapper using a connection pool."""
 
-    def __init__(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self._path = path
-        self._local = threading.local()
+    def __init__(self, database_url: str) -> None:
+        self._url = database_url
+        self._pool: psycopg2.pool.ThreadedConnectionPool | None = None
+        self._lock = threading.Lock()
 
     # ── Connection management ──────────────────────────────────────────────────
 
-    def _conn(self) -> sqlite3.Connection:
-        """Return the calling thread's own SQLite connection, creating it if needed."""
-        if not hasattr(self._local, "conn") or self._local.conn is None:
-            conn = sqlite3.connect(str(self._path))
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA foreign_keys=ON")
-            self._local.conn = conn
-            logger.debug("Opened new SQLite connection for thread %s", threading.current_thread().name)
-        return self._local.conn
+    def _get_conn(self):
+        return self._pool.getconn()
+
+    def _put_conn(self, conn, close: bool = False) -> None:
+        self._pool.putconn(conn, close=close)
 
     def initialize(self) -> None:
-        """Create all tables and apply any pending migrations."""
-        conn = self._conn()
-        conn.executescript("""
-            CREATE TABLE IF NOT EXISTS users (
-                id            TEXT PRIMARY KEY,
-                username      TEXT    NOT NULL UNIQUE COLLATE NOCASE,
-                email         TEXT    NOT NULL UNIQUE COLLATE NOCASE,
-                password_hash TEXT    NOT NULL,
-                created_at    TEXT    NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS sessions (
-                id         TEXT PRIMARY KEY,
-                title      TEXT    NOT NULL DEFAULT 'New Chat',
-                user_id    TEXT    NOT NULL DEFAULT 'anonymous',
-                created_at TEXT    NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS messages (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id  TEXT    NOT NULL,
-                role        TEXT    NOT NULL,
-                content     TEXT    NOT NULL,
-                confidence  TEXT    NOT NULL DEFAULT 'high',
-                sources     TEXT    NOT NULL DEFAULT '[]',
-                timestamp   TEXT    NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS sources (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                name         TEXT    NOT NULL,
-                url          TEXT    NOT NULL UNIQUE,
-                type         TEXT    NOT NULL DEFAULT 'rss',
-                enabled      INTEGER NOT NULL DEFAULT 1,
-                last_fetched TEXT,
-                item_count   INTEGER NOT NULL DEFAULT 0,
-                added_at     TEXT    NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS unanswered (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT,
-                question   TEXT    NOT NULL,
-                timestamp  TEXT    NOT NULL,
-                reviewed   INTEGER NOT NULL DEFAULT 0
-            );
-            CREATE TABLE IF NOT EXISTS learning_log (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                source_name TEXT,
-                items_added INTEGER,
-                timestamp   TEXT NOT NULL
-            );
-        """)
-        conn.commit()
-        self._migrate(conn)
-
-    def _migrate(self, conn: sqlite3.Connection) -> None:
-        """Apply schema migrations idempotently."""
-        # v1 → v2: add user_id column to sessions
+        """Create connection pool, all tables, and apply any pending migrations."""
+        self._pool = psycopg2.pool.ThreadedConnectionPool(
+            minconn=1,
+            maxconn=10,
+            dsn=self._url,
+        )
+        conn = self._get_conn()
         try:
-            conn.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT NOT NULL DEFAULT 'anonymous'")
-            conn.commit()
-            logger.info("DB migration: added user_id column to sessions.")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id            TEXT PRIMARY KEY,
+                            username      TEXT NOT NULL,
+                            email         TEXT NOT NULL,
+                            password_hash TEXT NOT NULL,
+                            created_at    TEXT NOT NULL,
+                            UNIQUE (username),
+                            UNIQUE (email)
+                        );
+
+                        CREATE TABLE IF NOT EXISTS sessions (
+                            id         TEXT PRIMARY KEY,
+                            title      TEXT NOT NULL DEFAULT 'New Chat',
+                            user_id    TEXT NOT NULL DEFAULT 'anonymous',
+                            created_at TEXT NOT NULL
+                        );
+
+                        CREATE TABLE IF NOT EXISTS messages (
+                            id          SERIAL PRIMARY KEY,
+                            session_id  TEXT NOT NULL,
+                            role        TEXT NOT NULL,
+                            content     TEXT NOT NULL,
+                            confidence  TEXT NOT NULL DEFAULT 'high',
+                            sources     TEXT NOT NULL DEFAULT '[]',
+                            timestamp   TEXT NOT NULL
+                        );
+
+                        CREATE TABLE IF NOT EXISTS sources (
+                            id           SERIAL PRIMARY KEY,
+                            name         TEXT NOT NULL,
+                            url          TEXT NOT NULL UNIQUE,
+                            type         TEXT NOT NULL DEFAULT 'rss',
+                            enabled      INTEGER NOT NULL DEFAULT 1,
+                            last_fetched TEXT,
+                            item_count   INTEGER NOT NULL DEFAULT 0,
+                            added_at     TEXT NOT NULL
+                        );
+
+                        CREATE TABLE IF NOT EXISTS unanswered (
+                            id         SERIAL PRIMARY KEY,
+                            session_id TEXT,
+                            question   TEXT NOT NULL,
+                            timestamp  TEXT NOT NULL,
+                            reviewed   INTEGER NOT NULL DEFAULT 0
+                        );
+
+                        CREATE TABLE IF NOT EXISTS learning_log (
+                            id          SERIAL PRIMARY KEY,
+                            source_name TEXT,
+                            items_added INTEGER,
+                            timestamp   TEXT NOT NULL
+                        );
+                    """)
+            self._migrate(conn)
+            logger.info("PostgreSQL database initialised.")
+        finally:
+            self._put_conn(conn)
+
+    def _migrate(self, conn) -> None:
+        """Apply schema migrations idempotently."""
+        # Example: add user_id to sessions if missing (already in schema above for new DBs)
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        ALTER TABLE sessions
+                        ADD COLUMN IF NOT EXISTS user_id TEXT NOT NULL DEFAULT 'anonymous';
+                    """)
+            logger.info("DB migration check complete.")
+        except Exception as e:
+            logger.debug("Migration note: %s", e)
 
     def close(self) -> None:
-        conn = getattr(self._local, "conn", None)
-        if conn:
-            conn.close()
-            self._local.conn = None
+        if self._pool:
+            self._pool.closeall()
 
     # ── Sessions ──────────────────────────────────────────────────────────────
 
     def get_or_create_session(self, session_id: str, user_id: str = "anonymous") -> dict:
-        """Return an existing session or insert a new one."""
-        conn = self._conn()
-        row = conn.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
-        if row:
-            return dict(row)
-        conn.execute(
-            "INSERT INTO sessions (id, title, user_id, created_at) VALUES (?, ?, ?, ?)",
-            (session_id, "New Chat", user_id, _now()),
-        )
-        conn.commit()
-        return {"id": session_id, "title": "New Chat", "user_id": user_id, "created_at": _now()}
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    cur.execute("SELECT * FROM sessions WHERE id = %s", (session_id,))
+                    row = cur.fetchone()
+                    if row:
+                        return dict(row)
+                    cur.execute(
+                        "INSERT INTO sessions (id, title, user_id, created_at) VALUES (%s, %s, %s, %s)",
+                        (session_id, "New Chat", user_id, _now()),
+                    )
+            return {"id": session_id, "title": "New Chat", "user_id": user_id, "created_at": _now()}
+        finally:
+            self._put_conn(conn)
 
     def list_sessions(self, user_id: str = "anonymous") -> list[dict]:
-        """Return the 50 most recent sessions belonging to user_id."""
-        rows = self._conn().execute(
-            "SELECT * FROM sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
-            (user_id,),
-        ).fetchall()
-        return [dict(r) for r in rows]
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT * FROM sessions WHERE user_id = %s ORDER BY created_at DESC LIMIT 50",
+                    (user_id,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            self._put_conn(conn)
 
     def rename_session(self, session_id: str, title: str) -> None:
-        conn = self._conn()
-        conn.execute("UPDATE sessions SET title = ? WHERE id = ?", (title, session_id))
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE sessions SET title = %s WHERE id = %s", (title, session_id))
+        finally:
+            self._put_conn(conn)
 
     def delete_session(self, session_id: str, user_id: str = "anonymous") -> bool:
-        """Delete session and its messages. Returns True if the session existed and belonged to user_id."""
-        conn = self._conn()
-        row = conn.execute(
-            "SELECT id FROM sessions WHERE id = ? AND user_id = ?", (session_id, user_id)
-        ).fetchone()
-        if not row:
-            return False
-        conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
-        conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
-        conn.commit()
-        return True
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT id FROM sessions WHERE id = %s AND user_id = %s",
+                        (session_id, user_id),
+                    )
+                    if not cur.fetchone():
+                        return False
+                    cur.execute("DELETE FROM messages WHERE session_id = %s", (session_id,))
+                    cur.execute("DELETE FROM sessions WHERE id = %s", (session_id,))
+            return True
+        finally:
+            self._put_conn(conn)
 
     def is_first_message(self, session_id: str) -> bool:
-        """Return True if no messages exist yet for this session."""
-        count = self._conn().execute(
-            "SELECT COUNT(*) FROM messages WHERE session_id = ?", (session_id,)
-        ).fetchone()[0]
-        return count == 0
+        conn = self._get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM messages WHERE session_id = %s", (session_id,))
+                return cur.fetchone()[0] == 0
+        finally:
+            self._put_conn(conn)
 
     # ── Users ─────────────────────────────────────────────────────────────────
 
     def create_user(self, user_id: str, username: str, email: str, password_hash: str) -> None:
-        conn = self._conn()
-        conn.execute(
-            "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-            (user_id, username, email, password_hash, _now()),
-        )
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO users (id, username, email, password_hash, created_at) "
+                        "VALUES (%s, %s, %s, %s, %s)",
+                        (user_id, username, email, password_hash, _now()),
+                    )
+        finally:
+            self._put_conn(conn)
 
     def get_user_by_username(self, username: str) -> dict | None:
-        row = self._conn().execute(
-            "SELECT * FROM users WHERE username = ?", (username,)
-        ).fetchone()
-        return dict(row) if row else None
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT * FROM users WHERE LOWER(username) = LOWER(%s)", (username,)
+                )
+                row = cur.fetchone()
+                return dict(row) if row else None
+        finally:
+            self._put_conn(conn)
 
     def get_user_by_email(self, email: str) -> dict | None:
-        row = self._conn().execute(
-            "SELECT * FROM users WHERE email = ?", (email,)
-        ).fetchone()
-        return dict(row) if row else None
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (email,)
+                )
+                row = cur.fetchone()
+                return dict(row) if row else None
+        finally:
+            self._put_conn(conn)
 
     def get_user_by_id(self, user_id: str) -> dict | None:
-        row = self._conn().execute(
-            "SELECT * FROM users WHERE id = ?", (user_id,)
-        ).fetchone()
-        return dict(row) if row else None
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+                row = cur.fetchone()
+                return dict(row) if row else None
+        finally:
+            self._put_conn(conn)
 
     def list_all_users(self) -> list[dict]:
-        """Return all users ordered by creation date (newest first). For admin use only."""
-        rows = self._conn().execute(
-            "SELECT id, username, email, created_at FROM users ORDER BY created_at DESC"
-        ).fetchall()
-        return [dict(r) for r in rows]
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT id, username, email, created_at FROM users ORDER BY created_at DESC"
+                )
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            self._put_conn(conn)
 
     # ── Messages ──────────────────────────────────────────────────────────────
 
@@ -213,31 +275,37 @@ class Database:
         confidence: str = "high",
         sources: str = "[]",
     ) -> None:
-        conn = self._conn()
-        conn.execute(
-            "INSERT INTO messages (session_id, role, content, confidence, sources, timestamp) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (session_id, role, content, confidence, sources, _now()),
-        )
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO messages (session_id, role, content, confidence, sources, timestamp) "
+                        "VALUES (%s, %s, %s, %s, %s, %s)",
+                        (session_id, role, content, confidence, sources, _now()),
+                    )
+        finally:
+            self._put_conn(conn)
 
     def get_messages(self, session_id: str, limit: int = 50, user_id: str | None = None) -> list[dict]:
-        """
-        Return messages for a session in chronological order.
-        If user_id is given, only returns messages when the session belongs to that user
-        (prevents one account from reading another account's conversation by guessing an id).
-        """
-        conn = self._conn()
-        if user_id is not None:
-            owner = conn.execute(
-                "SELECT 1 FROM sessions WHERE id = ? AND user_id = ?", (session_id, user_id)
-            ).fetchone()
-            if not owner:
-                return []
-        rows = conn.execute(
-            "SELECT * FROM messages WHERE session_id = ? ORDER BY id DESC LIMIT ?",
-            (session_id, limit),
-        ).fetchall()
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                if user_id is not None:
+                    cur.execute(
+                        "SELECT 1 FROM sessions WHERE id = %s AND user_id = %s",
+                        (session_id, user_id),
+                    )
+                    if not cur.fetchone():
+                        return []
+                cur.execute(
+                    "SELECT * FROM messages WHERE session_id = %s ORDER BY id DESC LIMIT %s",
+                    (session_id, limit),
+                )
+                rows = cur.fetchall()
+        finally:
+            self._put_conn(conn)
+
         result = []
         for r in reversed(rows):
             msg = dict(r)
@@ -252,66 +320,107 @@ class Database:
     # ── Sources ───────────────────────────────────────────────────────────────
 
     def list_sources(self) -> list[dict]:
-        return [
-            dict(r)
-            for r in self._conn().execute(
-                "SELECT * FROM sources ORDER BY added_at DESC"
-            ).fetchall()
-        ]
+        conn = self._get_conn()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM sources ORDER BY added_at DESC")
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            self._put_conn(conn)
 
     def add_source(self, name: str, url: str, src_type: str = "rss") -> int | None:
-        """Insert a source; returns the new row id, or None if URL already exists."""
-        conn = self._conn()
-        cur = conn.execute(
-            "INSERT OR IGNORE INTO sources (name, url, type, added_at) VALUES (?, ?, ?, ?)",
-            (name, url, src_type, _now()),
-        )
-        conn.commit()
-        return cur.lastrowid if cur.lastrowid else None
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO sources (name, url, type, added_at) VALUES (%s, %s, %s, %s) "
+                        "ON CONFLICT (url) DO NOTHING RETURNING id",
+                        (name, url, src_type, _now()),
+                    )
+                    row = cur.fetchone()
+                    return row[0] if row else None
+        finally:
+            self._put_conn(conn)
 
     def update_source_fetch(self, source_id: int, item_count: int) -> None:
-        conn = self._conn()
-        conn.execute(
-            "UPDATE sources SET last_fetched = ?, item_count = item_count + ? WHERE id = ?",
-            (_now(), item_count, source_id),
-        )
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE sources SET last_fetched = %s, item_count = item_count + %s WHERE id = %s",
+                        (_now(), item_count, source_id),
+                    )
+        finally:
+            self._put_conn(conn)
 
     def delete_source(self, source_id: int) -> None:
-        conn = self._conn()
-        conn.execute("DELETE FROM sources WHERE id = ?", (source_id,))
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM sources WHERE id = %s", (source_id,))
+        finally:
+            self._put_conn(conn)
 
     def toggle_source(self, source_id: int, enabled: bool) -> None:
-        conn = self._conn()
-        conn.execute("UPDATE sources SET enabled = ? WHERE id = ?", (int(enabled), source_id))
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE sources SET enabled = %s WHERE id = %s",
+                        (int(enabled), source_id),
+                    )
+        finally:
+            self._put_conn(conn)
 
     # ── Unanswered ────────────────────────────────────────────────────────────
 
     def save_unanswered(self, session_id: str, question: str) -> None:
-        conn = self._conn()
-        conn.execute(
-            "INSERT INTO unanswered (session_id, question, timestamp) VALUES (?, ?, ?)",
-            (session_id, question, _now()),
-        )
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO unanswered (session_id, question, timestamp) VALUES (%s, %s, %s)",
+                        (session_id, question, _now()),
+                    )
+        finally:
+            self._put_conn(conn)
 
     # ── Stats ─────────────────────────────────────────────────────────────────
 
     def get_stats(self) -> dict:
-        conn = self._conn()
-        return {
-            "sessions":   conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0],
-            "messages":   conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0],
-            "sources":    conn.execute("SELECT COUNT(*) FROM sources WHERE enabled = 1").fetchone()[0],
-            "unanswered": conn.execute("SELECT COUNT(*) FROM unanswered WHERE reviewed = 0").fetchone()[0],
-        }
+        conn = self._get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM sessions")
+                sessions = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM messages")
+                messages = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM sources WHERE enabled = 1")
+                sources = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM unanswered WHERE reviewed = 0")
+                unanswered = cur.fetchone()[0]
+            return {
+                "sessions": sessions,
+                "messages": messages,
+                "sources": sources,
+                "unanswered": unanswered,
+            }
+        finally:
+            self._put_conn(conn)
 
     def log_learning(self, source_name: str, items_added: int) -> None:
-        conn = self._conn()
-        conn.execute(
-            "INSERT INTO learning_log (source_name, items_added, timestamp) VALUES (?, ?, ?)",
-            (source_name, items_added, _now()),
-        )
-        conn.commit()
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO learning_log (source_name, items_added, timestamp) VALUES (%s, %s, %s)",
+                        (source_name, items_added, _now()),
+                    )
+        finally:
+            self._put_conn(conn)

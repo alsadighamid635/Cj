@@ -12,8 +12,11 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
-DB_FILE  = DATA_DIR / "cj_web.db"
 LOG_FILE = DATA_DIR / "app.log"
+
+# ── Database ──────────────────────────────────────────────────────────────────
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 # Path to the seeded Q&A knowledge base (shared with cj-ai CLI)
 KNOWLEDGE_FILE = BASE_DIR.parent.parent / "cj-ai" / "knowledge" / "knowledge.json"
@@ -124,6 +127,8 @@ def validate_required_env() -> None:
     Logs a clear error and exits early rather than failing deep inside a request handler.
     """
     missing = []
+    if not DATABASE_URL:
+        missing.append("DATABASE_URL")
     if not QDRANT_URL:
         missing.append("QDRANT_URL")
     if not GROQ_API_KEY:

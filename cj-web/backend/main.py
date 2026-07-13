@@ -38,7 +38,7 @@ logger = setup_logger(config.LOG_FILE)
 # ── Fail fast if required secrets are missing ─────────────────────────────────
 config.validate_required_env()
 
-db = Database(config.DB_FILE)
+db = Database(config.DATABASE_URL)
 
 
 @asynccontextmanager
