@@ -482,6 +482,51 @@ body {
 .auth-lang-toggle:hover { color: var(--accent); border-color: var(--accent); }
 .auth-page { position: relative; }
 
+/* ── Password strength meter ─────────────────────────────────── */
+.pw-strength-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.pw-strength-bar {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.pw-strength-seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.pw-strength-seg.pw-weak   { background: var(--danger); }
+.pw-strength-seg.pw-fair   { background: var(--warning); }
+.pw-strength-seg.pw-good   { background: #58a6ff; }
+.pw-strength-seg.pw-strong { background: var(--success); }
+
+.pw-strength-label {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 62px;
+  text-align: end;
+}
+.pw-strength-label.pw-weak   { color: var(--danger); }
+.pw-strength-label.pw-fair   { color: var(--warning); }
+.pw-strength-label.pw-good   { color: #58a6ff; }
+.pw-strength-label.pw-strong { color: var(--success); }
+
+.pw-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-top: -6px;
+}
+
 /* ── Chat window ──────────────────────────────────────────────────── */
 .chat-window {
   flex: 1;

@@ -35,7 +35,10 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 _db = None
 _bearer = HTTPBearer(auto_error=False)
 
-_USERNAME_RE = re.compile(r"^[a-zA-Z0-9_]+$")
+# Accepts: Arabic letters (all Unicode Arabic blocks), English letters, digits, underscores, spaces
+_USERNAME_RE = re.compile(
+    r"^[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z0-9_ ]+$"
+)
 
 
 def init(db) -> None:
@@ -99,7 +102,28 @@ class SignupRequest(BaseModel):
     def _valid_username(cls, v: str) -> str:
         v = v.strip()
         if not _USERNAME_RE.match(v):
-            raise ValueError("Username may only contain letters, numbers, and underscores.")
+            raise ValueError(
+                "اسم المستخدم يقبل الأحرف العربية والإنجليزية والأرقام والشرطة السفلية فقط. / "
+                "Username may only contain Arabic/English letters, digits, underscores, or spaces."
+            )
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def _strong_password(cls, v: str) -> str:
+        errors = []
+        if len(v) < 8:
+            errors.append("8 أحرف على الأقل / at least 8 characters")
+        if not re.search(r"[A-Z]", v):
+            errors.append("حرف كبير / uppercase letter")
+        if not re.search(r"[a-z]", v):
+            errors.append("حرف صغير / lowercase letter")
+        if not re.search(r"\d", v):
+            errors.append("رقم / digit")
+        if not re.search(r"[!@#$%^&*()\-_=+\[\]{};:'\",.<>/?\\|`~]", v):
+            errors.append("رمز خاص (!@#$…) / special character")
+        if errors:
+            raise ValueError("كلمة المرور يجب أن تحتوي على: " + "، ".join(errors))
         return v
 
 
