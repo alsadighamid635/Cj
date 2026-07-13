@@ -5,8 +5,8 @@ Three collections:
   cybersec_sources    — articles scraped from RSS / web
   chat_memory         — past conversation turns (for context)
 
-Embeddings: sentence-transformers all-MiniLM-L6-v2 (same model as before,
-run locally via the qdrant_client fastembed integration).
+Embeddings: fastembed all-MiniLM-L6-v2 (ONNX runtime — ~100MB RAM vs
+~400MB for sentence-transformers/PyTorch).
 """
 
 import os
@@ -53,16 +53,16 @@ def _ensure_collection(name: str):
         logger.info("Created Qdrant collection '%s'", name)
 
 
-# ── Embedding (local, using sentence-transformers) ───────────────────────────
+# ── Embedding (fastembed — ONNX, low RAM) ────────────────────────────────────
 
 _embedder = None
 
 def _get_embedder():
     global _embedder
     if _embedder is None:
-        from sentence_transformers import SentenceTransformer
-        _embedder = SentenceTransformer("all-MiniLM-L6-v2")
-        logger.info("Embedding model loaded: all-MiniLM-L6-v2")
+        from fastembed import TextEmbedding
+        _embedder = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
+        logger.info("Embedding model loaded: all-MiniLM-L6-v2 (fastembed/ONNX)")
     return _embedder
 
 
@@ -70,7 +70,7 @@ def warm_up() -> None:
     """
     Pre-load the embedding model and Qdrant client at startup.
     Call this once during the FastAPI lifespan so the first user request
-    is not delayed by model initialisation (which can take 20-30 seconds).
+    is not delayed by model initialisation.
     """
     logger.info("Warming up embedding model...")
     _get_embedder()
@@ -79,8 +79,8 @@ def warm_up() -> None:
 
 def _embed(texts: list[str]) -> list[list[float]]:
     model = _get_embedder()
-    embeddings = model.encode(texts, convert_to_numpy=True)
-    return embeddings.tolist()
+    embeddings = list(model.embed(texts))
+    return [e.tolist() for e in embeddings]
 
 
 # ── Stable ID helper ──────────────────────────────────────────────────────────
