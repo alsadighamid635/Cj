@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import ChatWindow from "./components/ChatWindow.jsx";
 import InputBar from "./components/InputBar.jsx";
 import Sidebar from "./components/Sidebar.jsx";
-import SourcePanel from "./components/SourcePanel.jsx";
 import AuthPage from "./components/AuthPage.jsx";
 import AdminPage from "./components/AdminPage.jsx";
 import { useLang } from "./context/LangContext.jsx";
@@ -38,7 +37,6 @@ export default function App() {
   const [error, setError]             = useState(null);
   const [sessions, setSessions]       = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 640);
-  const [showSources, setShowSources] = useState(false);
   const [showAdmin, setShowAdmin]     = useState(false);
   const [stats, setStats]             = useState({});
 
@@ -158,8 +156,6 @@ export default function App() {
         onNew={newChat}
         onSwitch={switchSession}
         onDelete={removeSession}
-        onSourcesClick={() => setShowSources(true)}
-        showSourcesActive={showSources}
         user={user}
         isAdmin={isAdmin}
         onLogout={logout}
@@ -198,15 +194,6 @@ export default function App() {
 
         <InputBar onSend={handleSend} disabled={loading} />
       </div>
-
-      {showSources && (
-        <SourcePanel
-          onClose={() => {
-            setShowSources(false);
-            loadStats().then(setStats);
-          }}
-        />
-      )}
 
       {showAdmin && <AdminPage onClose={() => setShowAdmin(false)} />}
     </div>
