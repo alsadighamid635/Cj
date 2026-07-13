@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-sentence-transformers
+fastembed
 feedparser
 beautifulsoup4
 requests
