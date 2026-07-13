@@ -10,16 +10,17 @@
 
 const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
 
-/** Timeout for all requests in milliseconds. */
+/** Default timeout for most requests. Chat gets a longer timeout (see sendMessage). */
 const REQUEST_TIMEOUT_MS = 30_000;
+const CHAT_TIMEOUT_MS    = 60_000;
 
 /**
  * Fetch with a built-in timeout.
  * Throws a descriptive Error on timeout or network failure.
  */
-async function fetchWithTimeout(url, options = {}) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
     return res;
@@ -49,7 +50,7 @@ export async function sendMessage(message, sessionId, userId) {
     method: "POST",
     headers: buildHeaders(userId),
     body: JSON.stringify({ message, session_id: sessionId }),
-  });
+  }, CHAT_TIMEOUT_MS);
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
     throw new Error(detail?.detail ?? `Server error (${res.status})`);

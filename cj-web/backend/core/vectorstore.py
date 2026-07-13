@@ -62,7 +62,19 @@ def _get_embedder():
     if _embedder is None:
         from sentence_transformers import SentenceTransformer
         _embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        logger.info("Embedding model loaded: all-MiniLM-L6-v2")
     return _embedder
+
+
+def warm_up() -> None:
+    """
+    Pre-load the embedding model and Qdrant client at startup.
+    Call this once during the FastAPI lifespan so the first user request
+    is not delayed by model initialisation (which can take 20-30 seconds).
+    """
+    logger.info("Warming up embedding model...")
+    _get_embedder()
+    logger.info("Embedding model ready.")
 
 
 def _embed(texts: list[str]) -> list[list[float]]:

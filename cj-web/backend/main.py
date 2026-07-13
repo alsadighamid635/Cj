@@ -46,6 +46,10 @@ async def lifespan(app: FastAPI):
     db.initialize()
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Pre-load the embedding model so the first user request is instant
+    from core import vectorstore
+    vectorstore.warm_up()
+
     seeder.seed_knowledge()
 
     for feed in config.DEFAULT_FEEDS:
