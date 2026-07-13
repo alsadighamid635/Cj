@@ -1109,11 +1109,19 @@ body {
 }
 
 @media (max-width: 780px) {
-  .auth-page { flex-direction: column; height: auto; min-height: var(--app-height, 100dvh); }
-  .auth-brand { flex: 0 0 auto; padding: 28px 20px; min-height: 0; }
-  .auth-brand-logo { width: 96px; height: 96px; }
-  .auth-brand-title { font-size: 22px; }
-  .auth-panel { flex: 1 1 auto; }
+  /* html/body/#root all set overflow:hidden (the chat UI manages its own scroll regions),
+     so .auth-page must keep an explicit, viewport-bound height with its own overflow-y:auto
+     — otherwise content taller than the screen (the signup button, feature icons, footer)
+     becomes permanently unreachable on phones, which is exactly what was reported. */
+  .auth-page { flex-direction: column; height: var(--app-height, 100dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .auth-brand { flex: 0 0 auto; padding: 18px 20px; min-height: 0; gap: 6px; }
+  .auth-brand-logo { width: 64px; height: 64px; }
+  .auth-brand-title { font-size: 18px; }
+  .auth-brand-tag { font-size: 10px; letter-spacing: 2px; }
+  .auth-brand-divider { margin: 2px 0; }
+  .auth-brand-desc { font-size: 12px; line-height: 1.6; }
+  .auth-brand-shield { display: none; }
+  .auth-panel { flex: 0 0 auto; padding: 24px 20px 40px; }
 }
 
 /* ── Mobile ───────────────────────────────────────────────────────── */
