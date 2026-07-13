@@ -68,27 +68,25 @@ export default function App() {
     loadStats().then(setStats);
   }, []);
 
-  async function handleSend(text, file = null) {
+  async function handleSend(text, attachment = null) {
     setError(null);
 
-    // Build the user-facing message object (preview image inline when applicable)
+    // attachment is { raw: File, name, type, size, preview } | null
+    const rawFile = attachment?.raw ?? null;
+
     const userMsg = {
-      role:       "user",
-      content:    text,
-      timestamp:  new Date().toISOString(),
-      attachment: file
-        ? {
-            name:    file.name,
-            type:    file.type,
-            preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
-          }
+      role:      "user",
+      content:   text,
+      timestamp: new Date().toISOString(),
+      attachment: attachment
+        ? { name: attachment.name, type: attachment.type, preview: attachment.preview }
         : null,
     };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      const data = await sendMessage(text, sessionId, USER_ID, file);
+      const data = await sendMessage(text, sessionId, USER_ID, rawFile);
       const botMsg = {
         role:       "assistant",
         content:    data.reply,

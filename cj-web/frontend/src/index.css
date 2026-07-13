@@ -747,8 +747,24 @@ body {
 
 /* ── File attachment — InputBar ───────────────────────────────────── */
 
+/* Visually hidden but still accessible & clickable via <label> on mobile */
+.file-input-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .btn-attach {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   font-size: 18px;
@@ -759,9 +775,20 @@ body {
   line-height: 1;
   align-self: flex-end;
   margin-bottom: 6px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.btn-attach:hover:not(:disabled) { opacity: 1; transform: rotate(15deg); }
-.btn-attach:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-attach:hover { opacity: 1; transform: rotate(15deg); }
+.btn-attach--disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+.attach-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
 
 .attach-preview {
   display: flex;
