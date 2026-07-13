@@ -9,9 +9,10 @@ Endpoints:
   PATCH  /api/chat/session/{session_id}/title  — rename a session
 
 User identity:
-  Each browser generates a persistent UUID stored in localStorage and sends it
-  via the X-User-ID request header.  This provides conversation privacy without
-  requiring a login system.  It is NOT a security boundary — it is a UX feature.
+  Every request must carry a valid JWT (`Authorization: Bearer <token>`) issued by
+  POST /api/auth/login or /api/auth/signup.  The token's subject is the account's
+  user id, which scopes every session/message so one account can never read or
+  modify another account's conversations.
 
 File uploads:
   The POST /api/chat endpoint accepts multipart/form-data so the user can
@@ -23,12 +24,13 @@ File uploads:
 import time
 import uuid
 from collections import defaultdict, deque
-from typing import Annotated
+from typing import Annotated as Ann
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 import config
+from api.auth import require_user
 from core.file_processor import ALLOWED_TYPES, process_upload
 from utils.logger import get_logger
 
@@ -81,17 +83,6 @@ _rate_limiter = _SlidingWindowRateLimiter(
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _resolve_user_id(header_value: str | None) -> str:
-    """
-    Extract and sanitise the user ID from the X-User-ID header.
-    Falls back to 'anonymous' if absent or malformed.
-    """
-    if not header_value:
-        return "anonymous"
-    uid = header_value.strip()[: config.MAX_USER_ID_LEN]
-    return uid if uid else "anonymous"
-
-
 def _make_title(text: str) -> str:
     """Derive a short display title from the first user message."""
     title = " ".join(text.split())
@@ -117,10 +108,10 @@ class RenameTitleRequest(BaseModel):
 
 @router.post("", response_model=ChatResponse)
 async def chat(
+    user_id:    Ann[str, Depends(require_user)],
     message:    str           = Form(...,  min_length=1, max_length=config.MAX_MESSAGE_LEN),
     session_id: str | None    = Form(None, max_length=64),
     file:       UploadFile | None = File(None),
-    x_user_id:  Annotated[str | None, Header()] = None,
 ):
     """
     Main chat endpoint.  Accepts multipart/form-data with:
@@ -128,8 +119,6 @@ async def chat(
       • session_id (optional) — continue an existing conversation
       • file       (optional) — one image or document attachment
     """
-    user_id = _resolve_user_id(x_user_id)
-
     # Rate limit per user
     if not _rate_limiter.is_allowed(user_id):
         logger.warning("Rate limit exceeded for user_id=%s", user_id[:16])
@@ -187,22 +176,17 @@ async def chat(
 
 
 @router.get("/history/{session_id}")
-async def history(session_id: str):
-    return {"messages": _db.get_messages(session_id)}
+async def history(session_id: str, user_id: Ann[str, Depends(require_user)]):
+    return {"messages": _db.get_messages(session_id, user_id=user_id)}
 
 
 @router.get("/sessions")
-async def sessions(x_user_id: Annotated[str | None, Header()] = None):
-    user_id = _resolve_user_id(x_user_id)
+async def sessions(user_id: Ann[str, Depends(require_user)]):
     return {"sessions": _db.list_sessions(user_id)}
 
 
 @router.delete("/session/{session_id}")
-async def delete_session(
-    session_id: str,
-    x_user_id:  Annotated[str | None, Header()] = None,
-):
-    user_id = _resolve_user_id(x_user_id)
+async def delete_session(session_id: str, user_id: Ann[str, Depends(require_user)]):
     deleted = _db.delete_session(session_id, user_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Session not found or access denied.")
@@ -213,8 +197,9 @@ async def delete_session(
 async def rename_session(
     session_id: str,
     body:       RenameTitleRequest,
-    x_user_id:  Annotated[str | None, Header()] = None,
+    user_id:    Ann[str, Depends(require_user)],
 ):
-    _resolve_user_id(x_user_id)
+    if not any(s["id"] == session_id for s in _db.list_sessions(user_id)):
+        raise HTTPException(status_code=404, detail="Session not found or access denied.")
     _db.rename_session(session_id, body.title)
     return {"ok": True}

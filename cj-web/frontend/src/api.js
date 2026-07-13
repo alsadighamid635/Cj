@@ -1,18 +1,41 @@
 /**
  * API client for CJ-AI Web.
  *
- * All requests include the X-User-ID header so the backend can scope
- * conversations to individual browser identities without requiring auth.
+ * Every account holder gets a private JWT (issued by /api/auth/login or
+ * /api/auth/signup) which is sent as `Authorization: Bearer <token>` on
+ * every request. The backend uses it to scope conversations to that
+ * account only — no other user can read or modify them.
  *
  * VITE_API_URL is set on Vercel (points to the Render backend).
  * In local dev, Vite proxies /api → localhost:8000 automatically.
  */
 
 const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
+const TOKEN_KEY = "cj_auth_token";
 
 /** Default timeout for most requests. Chat gets a longer timeout (see sendMessage). */
 const REQUEST_TIMEOUT_MS = 30_000;
 const CHAT_TIMEOUT_MS    = 60_000;
+
+// ── Token storage ────────────────────────────────────────────────────────────
+
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+/**
+ * Thrown when the server rejects the current token (expired/invalid).
+ * Callers can catch this specifically to force a logout.
+ */
+export class AuthError extends Error {}
 
 /**
  * Fetch with a built-in timeout.
@@ -34,18 +57,67 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
   }
 }
 
-/** Build headers common to every request. */
-function buildHeaders(userId, extra = {}) {
+/** Build headers common to every authenticated request. */
+function authHeaders(extra = {}) {
+  const token = getToken();
   return {
-    "Content-Type": "application/json",
-    ...(userId ? { "X-User-ID": userId } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra,
   };
 }
 
+async function parseErrorDetail(res) {
+  const payload = await res.json().catch(() => ({}));
+  const raw = payload?.detail;
+  return Array.isArray(raw)
+    ? raw.map(e => e?.msg ?? String(e)).join("; ")
+    : (typeof raw === "string" ? raw : `Server error (${res.status})`);
+}
+
+/** Authenticated GET/DELETE/PATCH helper. Throws AuthError on 401. */
+async function authFetch(path, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const res = await fetchWithTimeout(
+    `${BASE}${path}`,
+    { ...options, headers: authHeaders(options.headers) },
+    timeoutMs,
+  );
+  if (res.status === 401) {
+    throw new AuthError(await parseErrorDetail(res));
+  }
+  return res;
+}
+
+// ── Auth endpoints ────────────────────────────────────────────────────────────
+
+export async function signup(username, email, password) {
+  const res = await fetchWithTimeout(`${BASE}/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, email, password }),
+  });
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
+  return res.json();
+}
+
+export async function login(identifier, password) {
+  const res = await fetchWithTimeout(`${BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier, password }),
+  });
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
+  return res.json();
+}
+
+export async function fetchMe() {
+  const res = await authFetch("/auth/me");
+  if (!res.ok) throw new AuthError(await parseErrorDetail(res));
+  return res.json();
+}
+
 // ── Chat endpoints ────────────────────────────────────────────────────────────
 
-export async function sendMessage(message, sessionId, userId, file = null) {
+export async function sendMessage(message, sessionId, file = null) {
   // Always use multipart/form-data so the backend Form() fields work with or without a file.
   // Do NOT set Content-Type manually — the browser must set it with the correct boundary.
   const fd = new FormData();
@@ -53,28 +125,18 @@ export async function sendMessage(message, sessionId, userId, file = null) {
   if (sessionId) fd.append("session_id", sessionId);
   if (file)      fd.append("file", file, file.name);
 
-  const headers = userId ? { "X-User-ID": userId } : {};
-
-  const res = await fetchWithTimeout(
-    `${BASE}/chat`,
-    { method: "POST", headers, body: fd },
+  const res = await authFetch(
+    "/chat",
+    { method: "POST", body: fd },
     CHAT_TIMEOUT_MS,
   );
-  if (!res.ok) {
-    const payload = await res.json().catch(() => ({}));
-    // FastAPI validation errors come back as { detail: [...] }; flatten them.
-    const raw = payload?.detail;
-    const msg = Array.isArray(raw)
-      ? raw.map(e => e?.msg ?? String(e)).join("; ")
-      : (typeof raw === "string" ? raw : `Server error (${res.status})`);
-    throw new Error(msg);
-  }
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
   return res.json();
 }
 
 export async function loadHistory(sessionId) {
   try {
-    const res = await fetchWithTimeout(`${BASE}/chat/history/${sessionId}`);
+    const res = await authFetch(`/chat/history/${sessionId}`);
     if (!res.ok) return { messages: [] };
     return res.json();
   } catch {
@@ -82,11 +144,9 @@ export async function loadHistory(sessionId) {
   }
 }
 
-export async function loadSessions(userId) {
+export async function loadSessions() {
   try {
-    const res = await fetchWithTimeout(`${BASE}/chat/sessions`, {
-      headers: buildHeaders(userId),
-    });
+    const res = await authFetch("/chat/sessions");
     if (!res.ok) return { sessions: [] };
     return res.json();
   } catch {
@@ -94,17 +154,14 @@ export async function loadSessions(userId) {
   }
 }
 
-export async function deleteSession(sessionId, userId) {
-  await fetchWithTimeout(`${BASE}/chat/session/${sessionId}`, {
-    method: "DELETE",
-    headers: buildHeaders(userId),
-  });
+export async function deleteSession(sessionId) {
+  await authFetch(`/chat/session/${sessionId}`, { method: "DELETE" });
 }
 
-export async function renameSession(sessionId, title, userId) {
-  await fetchWithTimeout(`${BASE}/chat/session/${sessionId}/title`, {
+export async function renameSession(sessionId, title) {
+  await authFetch(`/chat/session/${sessionId}/title`, {
     method: "PATCH",
-    headers: buildHeaders(userId),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
   });
 }

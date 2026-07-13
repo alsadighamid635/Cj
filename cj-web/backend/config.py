@@ -27,6 +27,16 @@ COLLECTION_KNOWLEDGE = "cybersec_knowledge"
 COLLECTION_SOURCES   = "cybersec_sources"
 COLLECTION_CHAT      = "chat_memory"
 
+# ── Authentication ────────────────────────────────────────────────────────────
+
+JWT_SECRET      = os.environ.get("SESSION_SECRET", "")
+JWT_ALGORITHM   = "HS256"
+JWT_EXPIRE_HOURS = 24 * 30   # tokens stay valid for 30 days
+
+MIN_USERNAME_LEN = 3
+MAX_USERNAME_LEN = 32
+MIN_PASSWORD_LEN = 8
+
 # ── LLM (Groq) ────────────────────────────────────────────────────────────────
 
 GROQ_API_KEY    = os.environ.get("GROQ_API_KEY", "")
@@ -113,6 +123,8 @@ def validate_required_env() -> None:
         missing.append("QDRANT_URL")
     if not GROQ_API_KEY:
         missing.append("GROQ_API_KEY")
+    if not JWT_SECRET:
+        missing.append("SESSION_SECRET")
 
     if missing:
         logging.getLogger("cj_web").error(

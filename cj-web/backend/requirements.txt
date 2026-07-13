@@ -9,3 +9,6 @@ python-multipart
 pydantic
 groq
 qdrant-client
+pyjwt
+bcrypt
+email-validator

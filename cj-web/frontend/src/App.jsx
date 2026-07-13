@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import ChatWindow from "./components/ChatWindow.jsx";
 import InputBar from "./components/InputBar.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import SourcePanel from "./components/SourcePanel.jsx";
-import { sendMessage, loadHistory, loadSessions, deleteSession, loadStats } from "./api.js";
+import AuthPage from "./components/AuthPage.jsx";
+import {
+  sendMessage, loadHistory, loadSessions, deleteSession, loadStats,
+  fetchMe, getToken, clearToken, AuthError,
+} from "./api.js";
 
 const SUGGESTIONS = [
   "What is SQL injection?",
@@ -14,21 +18,6 @@ const SUGGESTIONS = [
   "How to detect malware?",
   "What is Kerberoasting?",
 ];
-
-/**
- * Persistent browser identity — survives tab closes and browser restarts.
- * Stored in localStorage so the user always sees only their own conversations.
- * This is a UX privacy feature, not an authentication mechanism.
- */
-function getOrCreateUserId() {
-  const KEY = "cj_user_id";
-  let id = localStorage.getItem(KEY);
-  if (!id) {
-    id = uuidv4();
-    localStorage.setItem(KEY, id);
-  }
-  return id;
-}
 
 /**
  * Current chat session — resets when the tab is closed.
@@ -44,10 +33,11 @@ function getOrCreateSessionId() {
   return id;
 }
 
-// Computed once per page load; stable for the lifetime of the tab.
-const USER_ID = getOrCreateUserId();
-
 export default function App() {
+  // ── Auth state ────────────────────────────────────────────────────────────
+  const [user, setUser]           = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
   const [sessionId, setSessionId]     = useState(getOrCreateSessionId);
   const [messages, setMessages]       = useState([]);
   const [loading, setLoading]         = useState(false);
@@ -57,16 +47,38 @@ export default function App() {
   const [showSources, setShowSources] = useState(false);
   const [stats, setStats]             = useState({});
 
+  const logout = useCallback(() => {
+    clearToken();
+    setUser(null);
+    setMessages([]);
+    setSessions([]);
+  }, []);
+
+  // Validate any stored token on first load
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      setAuthChecked(true);
+      return;
+    }
+    fetchMe()
+      .then(me => setUser(me))
+      .catch(() => clearToken())
+      .finally(() => setAuthChecked(true));
+  }, []);
+
   // Load message history whenever the active session changes
   useEffect(() => {
+    if (!user) return;
     loadHistory(sessionId).then(d => setMessages(d.messages || []));
-  }, [sessionId]);
+  }, [sessionId, user]);
 
-  // Load this user's session list and global stats on mount
+  // Load this user's session list and global stats once authenticated
   useEffect(() => {
-    loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
+    if (!user) return;
+    loadSessions().then(d => setSessions(d.sessions || []));
     loadStats().then(setStats);
-  }, []);
+  }, [user]);
 
   async function handleSend(text, attachment = null) {
     setError(null);
@@ -86,7 +98,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const data = await sendMessage(text, sessionId, USER_ID, rawFile);
+      const data = await sendMessage(text, sessionId, rawFile);
       const botMsg = {
         role:       "assistant",
         content:    data.reply,
@@ -95,8 +107,12 @@ export default function App() {
         timestamp:  new Date().toISOString(),
       };
       setMessages(prev => [...prev, botMsg]);
-      loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
+      loadSessions().then(d => setSessions(d.sessions || []));
     } catch (err) {
+      if (err instanceof AuthError) {
+        logout();
+        return;
+      }
       const msg = err?.message && typeof err.message === "string"
         ? err.message
         : "An unexpected error occurred. Please try again.";
@@ -129,9 +145,17 @@ export default function App() {
   }
 
   async function removeSession(id) {
-    await deleteSession(id, USER_ID);
+    await deleteSession(id);
     if (id === sessionId) newChat();
     setSessions(prev => prev.filter(s => s.id !== id));
+  }
+
+  if (!authChecked) {
+    return <div className="app-layout" />;
+  }
+
+  if (!user) {
+    return <AuthPage onAuthenticated={(data) => setUser(data)} />;
   }
 
   return (
@@ -157,6 +181,8 @@ export default function App() {
             {stats.total_vectors != null && (
               <span className="topbar-stats">{stats.total_vectors} vectors</span>
             )}
+            <span className="topbar-user" title={user.email}>👤 {user.username}</span>
+            <button className="btn-logout" onClick={logout} title="Log out">⏻</button>
           </div>
         </div>
 

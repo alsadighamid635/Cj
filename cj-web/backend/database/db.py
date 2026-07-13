@@ -55,6 +55,13 @@ class Database:
         """Create all tables and apply any pending migrations."""
         conn = self._conn()
         conn.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                id            TEXT PRIMARY KEY,
+                username      TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+                email         TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT    NOT NULL,
+                created_at    TEXT    NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS sessions (
                 id         TEXT PRIMARY KEY,
                 title      TEXT    NOT NULL DEFAULT 'New Chat',
@@ -161,6 +168,34 @@ class Database:
         ).fetchone()[0]
         return count == 0
 
+    # ── Users ─────────────────────────────────────────────────────────────────
+
+    def create_user(self, user_id: str, username: str, email: str, password_hash: str) -> None:
+        conn = self._conn()
+        conn.execute(
+            "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+            (user_id, username, email, password_hash, _now()),
+        )
+        conn.commit()
+
+    def get_user_by_username(self, username: str) -> dict | None:
+        row = self._conn().execute(
+            "SELECT * FROM users WHERE username = ?", (username,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_user_by_email(self, email: str) -> dict | None:
+        row = self._conn().execute(
+            "SELECT * FROM users WHERE email = ?", (email,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_user_by_id(self, user_id: str) -> dict | None:
+        row = self._conn().execute(
+            "SELECT * FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
     # ── Messages ──────────────────────────────────────────────────────────────
 
     def save_message(
@@ -179,9 +214,20 @@ class Database:
         )
         conn.commit()
 
-    def get_messages(self, session_id: str, limit: int = 50) -> list[dict]:
-        """Return messages for a session in chronological order."""
-        rows = self._conn().execute(
+    def get_messages(self, session_id: str, limit: int = 50, user_id: str | None = None) -> list[dict]:
+        """
+        Return messages for a session in chronological order.
+        If user_id is given, only returns messages when the session belongs to that user
+        (prevents one account from reading another account's conversation by guessing an id).
+        """
+        conn = self._conn()
+        if user_id is not None:
+            owner = conn.execute(
+                "SELECT 1 FROM sessions WHERE id = ? AND user_id = ?", (session_id, user_id)
+            ).fetchone()
+            if not owner:
+                return []
+        rows = conn.execute(
             "SELECT * FROM messages WHERE session_id = ? ORDER BY id DESC LIMIT ?",
             (session_id, limit),
         ).fetchall()

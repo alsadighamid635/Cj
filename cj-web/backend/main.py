@@ -27,6 +27,7 @@ from database.db import Database
 from core import seeder, scraper, scheduler
 from core.rag import RAGPipeline
 from utils.logger import setup_logger
+from api import auth as auth_router
 from api import chat as chat_router
 from api import sources as sources_router
 from api import admin as admin_router
@@ -56,6 +57,7 @@ async def lifespan(app: FastAPI):
         db.add_source(feed["name"], feed["url"], "rss")
 
     pipeline = RAGPipeline(db)
+    auth_router.init(db)
     chat_router.init(pipeline, db)
     sources_router.init(db, scraper, scheduler)
     admin_router.init(db)
@@ -77,10 +79,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*", "X-User-ID"],
-    expose_headers=["X-User-ID"],
+    allow_headers=["*", "Authorization"],
 )
 
+app.include_router(auth_router.router)
 app.include_router(chat_router.router)
 app.include_router(sources_router.router)
 app.include_router(admin_router.router)

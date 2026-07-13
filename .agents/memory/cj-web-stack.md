@@ -1,36 +1,22 @@
 ---
 name: CJ-AI Web stack
-description: Runtime stack, key packages, and deployment targets for the CJ-AI web app.
+description: Stack layout and auth model for the CJ-AI Web (249Shadow AI) project.
 ---
 
-## Stack
+FastAPI+ChromaDB/Qdrant backend on port 8000, React+Vite frontend on port 5173 (proxies /api to backend).
 
-- **Backend**: FastAPI + Uvicorn on port `$PORT` (defaults 8000), Python 3.11
-- **Vector DB**: Qdrant Cloud (qdrant-client 1.18) — replaces local ChromaDB
-  - Collections: `cybersec_knowledge`, `cybersec_sources`, `chat_memory`
-  - API: `query_points()` for search (NOT the old `search()`), `FilterSelector` for deletes
-  - Cosine distance = `1.0 - r.score` (Qdrant returns similarity, old code expected distance)
-- **LLM**: Groq `llama-3.3-70b-versatile` via `groq` package
-- **Embeddings**: ChromaDB `DefaultEmbeddingFunction` (all-MiniLM-L6-v2, ONNX, local)
-- **Frontend**: React 18 + Vite on port 5173, proxies `/api` to backend in dev
+## Auth
+Real per-user accounts (bcrypt password hash + JWT signed with the `SESSION_SECRET` secret), not the old
+browser-generated `X-User-ID` header. `api/auth.py` exposes `require_user`, a FastAPI dependency other
+routers use to scope data to the caller's account. `db.get_messages()` takes an optional `user_id` and
+returns nothing if the session isn't owned by that user — always pass it when reading messages on behalf
+of a specific caller, or you reopen the cross-account data leak this replaced.
 
-## Key env vars (all secrets)
+**Why:** the original design explicitly documented client-supplied identity as "UX privacy, not a security
+boundary" — any user could read another's chats by guessing a session id. Real auth was needed before this
+was a safe multi-user app.
 
-- `GROQ_API_KEY`
-- `QDRANT_URL`
-- `QDRANT_API_KEY`
-
-## Deployment targets
-
-- **Backend → Render**: `render.yaml` at repo root; `startCommand: python main.py`; port read from `$PORT`
-- **Frontend → Vercel**: root dir = `cj-web/frontend`; `VITE_API_URL` = Render backend URL; `vercel.json` handles SPA routing
-
-## Why
-
-Migrated from local ChromaDB to Qdrant Cloud so data persists across Render restarts (ephemeral filesystem). Groq chosen for free tier + speed.
-
-## How to apply
-
-- Any new vector operation: use `query_points()` not `search()`; delete uses `FilterSelector(filter=Filter(...))`
-- Port binding: always read `int(os.environ.get("PORT", 8000))` in `main.py`
-- Qdrant errors should propagate (no silent swallowing in `count()`) so startup fails clearly
+## Link preview (Open Graph)
+`frontend/index.html` uses `%VITE_SITE_URL%/og-image.png` placeholders, filled in from `frontend/.env`
+(`VITE_SITE_URL`) at Vite build/dev time. That value is the Repl's dev domain by default — must be updated
+to the production domain in `.env` after publishing, or shared links keep pointing at the dev URL.
