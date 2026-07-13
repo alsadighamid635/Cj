@@ -2,7 +2,6 @@ import { useLang } from "../context/LangContext.jsx";
 
 export default function Sidebar({
   open, sessions, activeId, onNew, onSwitch, onDelete,
-  onSourcesClick, showSourcesActive,
   user, isAdmin, onLogout, onAdminClick, stats,
 }) {
   const { t, lang, setLang } = useLang();
@@ -58,14 +57,6 @@ export default function Sidebar({
 
       {/* ── Footer ── */}
       <div className="sidebar-footer">
-        {/* Sources */}
-        <button
-          className={`btn-sources ${showSourcesActive ? "active" : ""}`}
-          onClick={onSourcesClick}
-        >
-          🌐 {t.learningSources}
-        </button>
-
         {/* Admin panel — only for system owner */}
         {isAdmin && (
           <button className="sidebar-btn-admin" onClick={onAdminClick}>
