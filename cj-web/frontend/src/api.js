@@ -46,29 +46,28 @@ function buildHeaders(userId, extra = {}) {
 // ── Chat endpoints ────────────────────────────────────────────────────────────
 
 export async function sendMessage(message, sessionId, userId, file = null) {
-  let body, headers;
+  // Always use multipart/form-data so the backend Form() fields work with or without a file.
+  // Do NOT set Content-Type manually — the browser must set it with the correct boundary.
+  const fd = new FormData();
+  fd.append("message", message);
+  if (sessionId) fd.append("session_id", sessionId);
+  if (file)      fd.append("file", file, file.name);
 
-  if (file) {
-    // multipart/form-data — let the browser set the Content-Type + boundary
-    const fd = new FormData();
-    fd.append("message",    message);
-    if (sessionId) fd.append("session_id", sessionId);
-    fd.append("file", file, file.name);
-    body    = fd;
-    headers = userId ? { "X-User-ID": userId } : {};
-  } else {
-    body    = JSON.stringify({ message, session_id: sessionId });
-    headers = buildHeaders(userId);
-  }
+  const headers = userId ? { "X-User-ID": userId } : {};
 
   const res = await fetchWithTimeout(
     `${BASE}/chat`,
-    { method: "POST", headers, body },
+    { method: "POST", headers, body: fd },
     CHAT_TIMEOUT_MS,
   );
   if (!res.ok) {
-    const detail = await res.json().catch(() => ({}));
-    throw new Error(detail?.detail ?? `Server error (${res.status})`);
+    const payload = await res.json().catch(() => ({}));
+    // FastAPI validation errors come back as { detail: [...] }; flatten them.
+    const raw = payload?.detail;
+    const msg = Array.isArray(raw)
+      ? raw.map(e => e?.msg ?? String(e)).join("; ")
+      : (typeof raw === "string" ? raw : `Server error (${res.status})`);
+    throw new Error(msg);
   }
   return res.json();
 }

@@ -99,10 +99,13 @@ export default function App() {
       setMessages(prev => [...prev, botMsg]);
       loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
     } catch (err) {
-      setError(err.message);
+      const msg = err?.message && typeof err.message === "string"
+        ? err.message
+        : "An unexpected error occurred. Please try again.";
+      setError(msg);
       setMessages(prev => [...prev, {
         role:       "assistant",
-        content:    `⚠️ ${err.message}`,
+        content:    `⚠️ ${msg}`,
         confidence: "low",
         timestamp:  new Date().toISOString(),
       }]);
