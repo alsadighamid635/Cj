@@ -1,19 +1,26 @@
 """
-CJ-AI Web — FastAPI backend
-Serves the REST API on /api/* and the React frontend on /*
+CJ-AI Web — FastAPI backend entry point.
+
+Startup sequence:
+  1. Validate required environment variables (fail fast, clear error)
+  2. Initialise the SQLite database and run schema migrations
+  3. Seed the Q&A knowledge base into Qdrant (idempotent)
+  4. Seed default RSS sources into the DB (idempotent)
+  5. Wire all API routers with shared dependencies
+  6. Start the background learning scheduler
 """
 
 import os
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 import config
 from database.db import Database
@@ -24,7 +31,11 @@ from api import chat as chat_router
 from api import sources as sources_router
 from api import admin as admin_router
 
+# ── Logger must be set up before anything else logs ───────────────────────────
 logger = setup_logger(config.LOG_FILE)
+
+# ── Fail fast if required secrets are missing ─────────────────────────────────
+config.validate_required_env()
 
 db = Database(config.DB_FILE)
 
@@ -35,51 +46,48 @@ async def lifespan(app: FastAPI):
     db.initialize()
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Seed built-in Q&A knowledge into Qdrant (runs only if collection is empty)
     seeder.seed_knowledge()
 
-    # Seed default RSS sources into DB if not already present
     for feed in config.DEFAULT_FEEDS:
         db.add_source(feed["name"], feed["url"], "rss")
 
-    # Wire API modules
     pipeline = RAGPipeline(db)
     chat_router.init(pipeline, db)
     sources_router.init(db, scraper, scheduler)
     admin_router.init(db)
 
-    # Start background learning scheduler
     scheduler.start(db, scraper)
 
-    logger.info("CJ-AI Web started.")
+    logger.info("CJ-AI Web started successfully.")
     yield
+
     # ── Shutdown ──────────────────────────────────────────────────────────────
     scheduler.stop()
     db.close()
+    logger.info("CJ-AI Web shut down.")
 
 
-app = FastAPI(title="CJ-AI Web", lifespan=lifespan)
+app = FastAPI(title="CJ-AI Web", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "X-User-ID"],
+    expose_headers=["X-User-ID"],
 )
 
 app.include_router(chat_router.router)
 app.include_router(sources_router.router)
 app.include_router(admin_router.router)
 
-# Serve the built React frontend
+# ── Serve the pre-built React frontend (production only) ─────────────────────
 FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 
 if FRONTEND_DIST.exists():
-    # Mount /assets directory for JS/CSS bundles
     if (FRONTEND_DIST / "assets").exists():
         app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
 
-    # Explicitly serve PWA root files so they are not swallowed by the SPA fallback
     _ROOT_FILES = {"manifest.json", "favicon.svg", "favicon.ico", "robots.txt", "sw.js"}
 
     @app.get("/{full_path:path}", include_in_schema=False)

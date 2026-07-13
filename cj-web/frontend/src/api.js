@@ -1,67 +1,141 @@
+/**
+ * API client for CJ-AI Web.
+ *
+ * All requests include the X-User-ID header so the backend can scope
+ * conversations to individual browser identities without requiring auth.
+ *
+ * VITE_API_URL is set on Vercel (points to the Render backend).
+ * In local dev, Vite proxies /api → localhost:8000 automatically.
+ */
+
 const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
 
+/** Timeout for all requests in milliseconds. */
+const REQUEST_TIMEOUT_MS = 30_000;
+
+/**
+ * Fetch with a built-in timeout.
+ * Throws a descriptive Error on timeout or network failure.
+ */
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out. The server may be starting up — please try again.");
+    }
+    throw new Error("Network error. Please check your connection.");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Build headers common to every request. */
+function buildHeaders(userId, extra = {}) {
+  return {
+    "Content-Type": "application/json",
+    ...(userId ? { "X-User-ID": userId } : {}),
+    ...extra,
+  };
+}
+
+// ── Chat endpoints ────────────────────────────────────────────────────────────
+
 export async function sendMessage(message, sessionId, userId) {
-  const res = await fetch(`${BASE}/chat`, {
+  const res = await fetchWithTimeout(`${BASE}/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, session_id: sessionId, user_id: userId }),
+    headers: buildHeaders(userId),
+    body: JSON.stringify({ message, session_id: sessionId }),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail?.detail ?? `Server error (${res.status})`);
+  }
   return res.json();
 }
 
 export async function loadHistory(sessionId) {
-  const res = await fetch(`${BASE}/chat/history/${sessionId}`);
-  if (!res.ok) return { messages: [] };
-  return res.json();
+  try {
+    const res = await fetchWithTimeout(`${BASE}/chat/history/${sessionId}`);
+    if (!res.ok) return { messages: [] };
+    return res.json();
+  } catch {
+    return { messages: [] };
+  }
 }
 
 export async function loadSessions(userId) {
-  const params = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
-  const res = await fetch(`${BASE}/chat/sessions${params}`);
-  if (!res.ok) return { sessions: [] };
-  return res.json();
+  try {
+    const res = await fetchWithTimeout(`${BASE}/chat/sessions`, {
+      headers: buildHeaders(userId),
+    });
+    if (!res.ok) return { sessions: [] };
+    return res.json();
+  } catch {
+    return { sessions: [] };
+  }
 }
 
 export async function deleteSession(sessionId, userId) {
-  const params = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
-  await fetch(`${BASE}/chat/session/${sessionId}${params}`, { method: "DELETE" });
+  await fetchWithTimeout(`${BASE}/chat/session/${sessionId}`, {
+    method: "DELETE",
+    headers: buildHeaders(userId),
+  });
 }
 
-export async function renameSession(sessionId, title) {
-  await fetch(`${BASE}/chat/session/${sessionId}/title`, {
+export async function renameSession(sessionId, title, userId) {
+  await fetchWithTimeout(`${BASE}/chat/session/${sessionId}/title`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: buildHeaders(userId),
     body: JSON.stringify({ title }),
   });
 }
 
+// ── Sources endpoints ─────────────────────────────────────────────────────────
+
 export async function loadSources() {
-  const res = await fetch(`${BASE}/sources`);
-  if (!res.ok) return { sources: [] };
-  return res.json();
+  try {
+    const res = await fetchWithTimeout(`${BASE}/sources`);
+    if (!res.ok) return { sources: [] };
+    return res.json();
+  } catch {
+    return { sources: [] };
+  }
 }
 
 export async function addSource(name, url, type = "rss") {
-  const res = await fetch(`${BASE}/sources`, {
+  const res = await fetchWithTimeout(`${BASE}/sources`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, url, type }),
   });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail?.detail ?? `Failed to add source (${res.status})`);
+  }
   return res.json();
 }
 
 export async function deleteSource(id) {
-  await fetch(`${BASE}/sources/${id}`, { method: "DELETE" });
+  await fetchWithTimeout(`${BASE}/sources/${id}`, { method: "DELETE" });
 }
 
 export async function refreshSources() {
-  const res = await fetch(`${BASE}/sources/refresh`, { method: "POST" });
+  const res = await fetchWithTimeout(`${BASE}/sources/refresh`, { method: "POST" });
   return res.json();
 }
 
+// ── Admin endpoints ───────────────────────────────────────────────────────────
+
 export async function loadStats() {
-  const res = await fetch(`${BASE}/admin/stats`);
-  if (!res.ok) return {};
-  return res.json();
+  try {
+    const res = await fetchWithTimeout(`${BASE}/admin/stats`);
+    if (!res.ok) return {};
+    return res.json();
+  } catch {
+    return {};
+  }
 }

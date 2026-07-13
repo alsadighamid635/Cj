@@ -1,5 +1,14 @@
+"""
+Central configuration for CJ-AI Web.
+All tuneable values live here so they can be adjusted without touching business logic.
+"""
+
 import os
+import sys
+import logging
 from pathlib import Path
+
+# ── Directory layout ──────────────────────────────────────────────────────────
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
@@ -9,38 +18,54 @@ LOG_FILE = DATA_DIR / "app.log"
 # Path to the seeded Q&A knowledge base (shared with cj-ai CLI)
 KNOWLEDGE_FILE = BASE_DIR.parent.parent / "cj-ai" / "knowledge" / "knowledge.json"
 
-# Qdrant Cloud — credentials loaded from environment secrets
+# ── Qdrant Cloud ──────────────────────────────────────────────────────────────
+
 QDRANT_URL     = os.environ.get("QDRANT_URL", "")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "")
 
-# Qdrant collection names
-COLLECTION_KNOWLEDGE = "cybersec_knowledge"   # seeded Q&A pairs
-COLLECTION_SOURCES   = "cybersec_sources"     # articles from RSS / web scraping
-COLLECTION_CHAT      = "chat_memory"          # recent conversation turns
+COLLECTION_KNOWLEDGE = "cybersec_knowledge"
+COLLECTION_SOURCES   = "cybersec_sources"
+COLLECTION_CHAT      = "chat_memory"
 
-# LLM (Groq)
-LLM_MODEL        = "llama-3.3-70b-versatile"
-LLM_MAX_TOKENS   = 1024
-LLM_TEMPERATURE  = 0.4
-GROQ_API_KEY     = os.environ.get("GROQ_API_KEY", "")
+# ── LLM (Groq) ────────────────────────────────────────────────────────────────
 
-# Similarity thresholds (ChromaDB cosine distance: 0=identical, 2=opposite)
-DIST_HIGH  = 0.55   # confident direct answer
-DIST_MED   = 0.90   # partial / related answer
+GROQ_API_KEY    = os.environ.get("GROQ_API_KEY", "")
+LLM_MODEL       = "llama-3.3-70b-versatile"
+LLM_MAX_TOKENS  = 1024
+LLM_TEMPERATURE = 0.4
+
+# ── RAG thresholds (Qdrant cosine distance: 0=identical) ─────────────────────
+
+DIST_HIGH   = 0.55   # high-confidence direct answer
+DIST_MED    = 0.90   # partial / related answer
 MAX_RESULTS = 6
 
-# Learning scheduler
+# ── Learning scheduler ────────────────────────────────────────────────────────
+
 SCRAPER_INTERVAL_HOURS = 6
 
-# Default RSS feeds (cybersecurity)
+# ── API safety limits ─────────────────────────────────────────────────────────
+
+MAX_MESSAGE_LEN        = 2_000   # characters per user message
+MAX_USER_ID_LEN        = 64      # characters for the browser-generated user UUID
+MAX_SESSION_TITLE_LEN  = 45      # characters for auto-generated session titles
+
+# Rate limiting: at most RATE_LIMIT_REQUESTS per RATE_LIMIT_WINDOW_SECONDS
+RATE_LIMIT_REQUESTS        = 20
+RATE_LIMIT_WINDOW_SECONDS  = 60
+
+# ── Default RSS feeds ─────────────────────────────────────────────────────────
+
 DEFAULT_FEEDS = [
-    {"name": "The Hacker News",       "url": "https://feeds.feedburner.com/TheHackersNews",       "enabled": True},
-    {"name": "Krebs on Security",     "url": "https://krebsonsecurity.com/feed/",                  "enabled": True},
-    {"name": "SANS ISC Diary",        "url": "https://isc.sans.edu/rssfeed_full.xml",              "enabled": True},
-    {"name": "SecurityWeek",          "url": "https://feeds.feedburner.com/securityweek",          "enabled": True},
-    {"name": "NVD CVE (recent)",      "url": "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss-analyzed.xml", "enabled": True},
-    {"name": "BleepingComputer",      "url": "https://www.bleepingcomputer.com/feed/",             "enabled": True},
+    {"name": "The Hacker News",   "url": "https://feeds.feedburner.com/TheHackersNews",                  "enabled": True},
+    {"name": "Krebs on Security", "url": "https://krebsonsecurity.com/feed/",                            "enabled": True},
+    {"name": "SANS ISC Diary",    "url": "https://isc.sans.edu/rssfeed_full.xml",                        "enabled": True},
+    {"name": "SecurityWeek",      "url": "https://feeds.feedburner.com/securityweek",                    "enabled": True},
+    {"name": "NVD CVE (recent)",  "url": "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss-analyzed.xml","enabled": True},
+    {"name": "BleepingComputer",  "url": "https://www.bleepingcomputer.com/feed/",                       "enabled": True},
 ]
+
+# ── Cybersecurity scope keywords ──────────────────────────────────────────────
 
 CYBERSECURITY_KEYWORDS = [
     "cybersecurity","cyber security","information security","infosec",
@@ -69,3 +94,25 @@ CYBERSECURITY_KEYWORDS = [
     "honeypot","threat intelligence","mitre","att&ck",
     "أمن","اختراق","شبكات","تشفير","حماية","هكر","فايروس","برمجيات خبيثة",
 ]
+
+
+# ── Startup validation ────────────────────────────────────────────────────────
+
+def validate_required_env() -> None:
+    """
+    Verify that every required environment variable is set.
+    Logs a clear error and exits early rather than failing deep inside a request handler.
+    """
+    missing = []
+    if not QDRANT_URL:
+        missing.append("QDRANT_URL")
+    if not GROQ_API_KEY:
+        missing.append("GROQ_API_KEY")
+
+    if missing:
+        logging.getLogger("cj_web").error(
+            "Missing required environment variables: %s. "
+            "Set them in Replit Secrets and restart.",
+            ", ".join(missing),
+        )
+        sys.exit(1)

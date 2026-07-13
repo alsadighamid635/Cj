@@ -2,24 +2,23 @@
 RAG (Retrieval-Augmented Generation) pipeline — the core of CJ-AI Web.
 
 Query flow:
-  1. Shell-reference lookup  — instant answers for known security tools
+  1. Shell-reference lookup  — instant answers for known security tool commands
   2. Vector search           — retrieve relevant chunks from Qdrant
   3. LLM generation          — Groq Llama produces the final answer with context
   4. Scope guard             — out-of-scope questions are politely declined
-  5. Persistence             — Q&A saved to SQLite and chat memory to Qdrant
+  5. Persistence             — Q&A saved to SQLite; high-confidence turns stored in Qdrant
 """
 
+import hashlib
 import json
 from dataclasses import dataclass, field
+
 from core import vectorstore
 from core.generator import build_response
 from core.security_filter import is_cybersecurity_related, out_of_scope_reply
-from utils.text import is_arabic
-from utils.logger import get_logger
-from database.db import Database
-
-# Shell command reference (re-used from cj-ai logic, inline check)
 from core import shell_ref
+from database.db import Database
+from utils.logger import get_logger
 
 logger = get_logger()
 
@@ -33,60 +32,73 @@ class ChatResponse:
 
 
 class RAGPipeline:
-    def __init__(self, db: Database):
+    """Orchestrates shell-ref lookup → vector retrieval → LLM generation → persistence."""
+
+    def __init__(self, db: Database) -> None:
         self.db = db
 
     def query(self, user_input: str, session_id: str) -> ChatResponse:
+        """
+        Process a user message and return a structured ChatResponse.
+        Side effects: persists messages to SQLite and high-confidence turns to Qdrant.
+        """
         text = user_input.strip()
 
-        # 1. Shell command reference — always answer tool questions first
+        # 1. Instant answer for known security tool questions (no LLM needed)
         cmd_resp = shell_ref.get_response(text)
         if cmd_resp:
             self.db.save_message(session_id, "user", text)
             self.db.save_message(session_id, "assistant", cmd_resp, confidence="high")
             return ChatResponse(text=cmd_resp, confidence="high")
 
-        # 2. Search all vector collections
+        # 2. Retrieve semantically relevant chunks from all Qdrant collections
         hits = vectorstore.search_all(text)
 
-        # 3. Fetch recent conversation history for LLM context
+        # 3. Fetch recent conversation turns to give the LLM short-term memory
         recent = self.db.get_messages(session_id, limit=6)
         history = [{"role": m["role"], "content": m["content"]} for m in recent]
 
-        # 4. Generate response (LLM + RAG context)
+        # 4. Generate response via Groq LLM (falls back to chunk formatting if unavailable)
         response_text, confidence, sources = build_response(text, hits, history)
 
-        # 5. If no answer AND not cybersecurity → politely decline
+        # 5. Scope guard — only decline if the LLM also has no answer
         if confidence == "low" and not is_cybersecurity_related(text):
             reply = out_of_scope_reply(text)
             self.db.save_message(session_id, "user", text)
             self.db.save_message(session_id, "assistant", reply, confidence="low")
             return ChatResponse(text=reply, confidence="low", in_scope=False)
 
-        # 6. Record unanswered cybersecurity questions for future learning
+        # 6. Log unanswered cybersecurity questions for future learning
         if confidence == "low":
             self.db.save_unanswered(session_id, text)
 
-        # 7. Persist to DB
+        # 7. Persist the Q&A exchange to SQLite
         self.db.save_message(session_id, "user", text)
-        self.db.save_message(session_id, "assistant", response_text,
-                             confidence=confidence,
-                             sources=json.dumps(sources))
+        self.db.save_message(
+            session_id, "assistant", response_text,
+            confidence=confidence,
+            sources=json.dumps(sources),
+        )
 
-        # 8. Store this Q&A turn in chat memory for future context
+        # 8. Index high-confidence turns in Qdrant for future context retrieval
         if confidence == "high":
-            _store_chat_memory(session_id, text, response_text)
+            self._store_chat_memory(session_id, text, response_text)
 
         return ChatResponse(text=response_text, confidence=confidence, sources=sources)
 
-
-def _store_chat_memory(session_id: str, question: str, answer: str):
-    import hashlib
-    doc_id = "chat_" + hashlib.md5(f"{session_id}{question}".encode()).hexdigest()[:12]
-    vectorstore.add_documents(
-        "chat_memory",
-        ids=[doc_id],
-        documents=[f"{question}\n{answer[:400]}"],
-        metadatas=[{"type": "chat", "session_id": session_id,
-                    "question": question[:200]}],
-    )
+    def _store_chat_memory(self, session_id: str, question: str, answer: str) -> None:
+        """
+        Store a Q&A turn in the chat_memory Qdrant collection so the RAG pipeline
+        can retrieve it as context in future turns of the same (or related) sessions.
+        """
+        doc_id = "chat_" + hashlib.md5(f"{session_id}{question}".encode()).hexdigest()[:12]
+        vectorstore.add_documents(
+            collection_name="chat_memory",
+            ids=[doc_id],
+            documents=[f"{question}\n{answer[:400]}"],
+            metadatas=[{
+                "type":       "chat",
+                "session_id": session_id,
+                "question":   question[:200],
+            }],
+        )

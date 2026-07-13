@@ -15,68 +15,82 @@ const SUGGESTIONS = [
   "What is Kerberoasting?",
 ];
 
-/** Persistent user identity — survives across tabs and browser restarts */
+/**
+ * Persistent browser identity — survives tab closes and browser restarts.
+ * Stored in localStorage so the user always sees only their own conversations.
+ * This is a UX privacy feature, not an authentication mechanism.
+ */
 function getOrCreateUserId() {
-  let id = localStorage.getItem("cj_user_id");
+  const KEY = "cj_user_id";
+  let id = localStorage.getItem(KEY);
   if (!id) {
     id = uuidv4();
-    localStorage.setItem("cj_user_id", id);
+    localStorage.setItem(KEY, id);
   }
   return id;
 }
 
-/** Current session — resets when browser tab is closed */
+/**
+ * Current chat session — resets when the tab is closed.
+ * A fresh session ID is generated when the user clicks "New Chat".
+ */
 function getOrCreateSessionId() {
-  let id = sessionStorage.getItem("cj_session_id");
+  const KEY = "cj_session_id";
+  let id = sessionStorage.getItem(KEY);
   if (!id) {
     id = uuidv4();
-    sessionStorage.setItem("cj_session_id", id);
+    sessionStorage.setItem(KEY, id);
   }
   return id;
 }
 
+// Computed once per page load; stable for the lifetime of the tab.
 const USER_ID = getOrCreateUserId();
 
 export default function App() {
-  const [sessionId, setSessionId] = useState(getOrCreateSessionId);
-  const [messages, setMessages]   = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [sessions, setSessions]   = useState([]);
+  const [sessionId, setSessionId]     = useState(getOrCreateSessionId);
+  const [messages, setMessages]       = useState([]);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState(null);
+  const [sessions, setSessions]       = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 640);
   const [showSources, setShowSources] = useState(false);
-  const [stats, setStats]         = useState({});
+  const [stats, setStats]             = useState({});
 
-  // Load history for current session
+  // Load message history whenever the active session changes
   useEffect(() => {
     loadHistory(sessionId).then(d => setMessages(d.messages || []));
   }, [sessionId]);
 
-  // Load only this user's sessions
+  // Load this user's session list and global stats on mount
   useEffect(() => {
     loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
     loadStats().then(setStats);
   }, []);
 
   async function handleSend(text) {
+    setError(null);
     const userMsg = { role: "user", content: text, timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
+
     try {
       const data = await sendMessage(text, sessionId, USER_ID);
       const botMsg = {
-        role: "assistant",
-        content: data.reply,
+        role:       "assistant",
+        content:    data.reply,
         confidence: data.confidence,
-        sources: data.sources,
-        timestamp: new Date().toISOString(),
+        sources:    data.sources,
+        timestamp:  new Date().toISOString(),
       };
       setMessages(prev => [...prev, botMsg]);
-      // Refresh sessions list so new title appears in sidebar
+      // Refresh session list so the auto-generated title appears immediately
       loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
-    } catch {
+    } catch (err) {
+      setError(err.message);
       setMessages(prev => [...prev, {
-        role: "assistant",
-        content: "⚠️ Connection error. Please check the server.",
+        role:      "assistant",
+        content:   `⚠️ ${err.message}`,
         confidence: "low",
         timestamp: new Date().toISOString(),
       }]);
@@ -88,6 +102,7 @@ export default function App() {
   function switchSession(id) {
     setSessionId(id);
     sessionStorage.setItem("cj_session_id", id);
+    setError(null);
     if (window.innerWidth <= 640) setSidebarOpen(false);
   }
 
@@ -96,6 +111,7 @@ export default function App() {
     sessionStorage.setItem("cj_session_id", id);
     setSessionId(id);
     setMessages([]);
+    setError(null);
     if (window.innerWidth <= 640) setSidebarOpen(false);
   }
 
@@ -142,7 +158,12 @@ export default function App() {
       </div>
 
       {showSources && (
-        <SourcePanel onClose={() => { setShowSources(false); loadStats().then(setStats); }} />
+        <SourcePanel
+          onClose={() => {
+            setShowSources(false);
+            loadStats().then(setStats);
+          }}
+        />
       )}
     </div>
   );
