@@ -1,50 +1,38 @@
 import { useState } from "react";
 import { signup, login, setToken } from "../api.js";
-
-const FEATURES = [
-  { icon: "🧠", label: "ذكاء اصطناعي" },
-  { icon: "📊", label: "تحليل متقدم" },
-  { icon: "🛡️", label: "حماية ذكية" },
-  { icon: "⚡", label: "استجابة فورية" },
-];
+import { useLang } from "../context/LangContext.jsx";
 
 export default function AuthPage({ onAuthenticated }) {
-  const [mode, setMode]           = useState("login"); // "login" | "signup"
+  const { t, lang, setLang } = useLang();
+
+  const [mode, setMode]             = useState("login"); // "login" | "signup"
   const [identifier, setIdentifier] = useState("");
-  const [username, setUsername]   = useState("");
-  const [email, setEmail]         = useState("");
-  const [password, setPassword]   = useState("");
-  const [confirm, setConfirm]     = useState("");
-  const [remember, setRemember]   = useState(true);
+  const [username, setUsername]     = useState("");
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
+  const [confirm, setConfirm]       = useState("");
+  const [remember, setRemember]     = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError]         = useState(null);
-  const [busy, setBusy]           = useState(false);
+  const [error, setError]           = useState(null);
+  const [busy, setBusy]             = useState(false);
 
-  function resetFields() {
-    setError(null);
-    setPassword("");
-    setConfirm("");
-  }
-
-  function switchMode(next) {
-    setMode(next);
-    resetFields();
-  }
+  function resetFields() { setError(null); setPassword(""); setConfirm(""); }
+  function switchMode(next) { setMode(next); resetFields(); }
 
   async function handleLogin(e) {
     e.preventDefault();
     setError(null);
     if (!identifier.trim() || !password) {
-      setError("الرجاء إدخال اسم المستخدم وكلمة المرور.");
+      setError(t.fillLoginFields);
       return;
     }
     setBusy(true);
     try {
       const data = await login(identifier.trim(), password);
-      setToken(data.token);
+      setToken(data.token, remember);
       onAuthenticated(data);
     } catch (err) {
-      setError(err.message || "تعذر تسجيل الدخول. حاول مرة أخرى.");
+      setError(err.message || t.loginError);
     } finally {
       setBusy(false);
     }
@@ -54,31 +42,34 @@ export default function AuthPage({ onAuthenticated }) {
     e.preventDefault();
     setError(null);
     if (!username.trim() || !email.trim() || !password) {
-      setError("الرجاء تعبئة جميع الحقول.");
+      setError(t.fillAll);
       return;
     }
-    if (password.length < 8) {
-      setError("يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.");
-      return;
-    }
-    if (password !== confirm) {
-      setError("كلمتا المرور غير متطابقتين.");
-      return;
-    }
+    if (password.length < 8) { setError(t.passwordMin8); return; }
+    if (password !== confirm) { setError(t.passwordsNoMatch); return; }
     setBusy(true);
     try {
       const data = await signup(username.trim(), email.trim(), password);
-      setToken(data.token);
+      setToken(data.token, remember);
       onAuthenticated(data);
     } catch (err) {
-      setError(err.message || "تعذر إنشاء الحساب. حاول مرة أخرى.");
+      setError(err.message || t.signupError);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="auth-page" dir="rtl">
+    <div className="auth-page" dir={t.dir}>
+      {/* Language toggle on auth page */}
+      <button
+        className="auth-lang-toggle"
+        onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+      >
+        {lang === "ar" ? "EN" : "ع"}
+      </button>
+
+      {/* Brand panel */}
       <div className="auth-brand">
         <div className="auth-brand-glow" />
         <img src="/logo.jpg" alt="249Shadow AI" className="auth-brand-logo" />
@@ -86,19 +77,20 @@ export default function AuthPage({ onAuthenticated }) {
         <p className="auth-brand-tag">CYBERSECURITY AI ASSISTANT</p>
         <div className="auth-brand-divider" />
         <p className="auth-brand-desc">
-          مساعدك الذكي في عالم الأمن السيبراني
+          {t.brandDesc}
           <br />
-          تحليل · حماية · استجابة · تعلم
+          {t.brandSub}
         </p>
         <div className="auth-brand-shield">🛡️</div>
       </div>
 
+      {/* Form panel */}
       <div className="auth-panel">
         <div className="auth-panel-inner">
           <div className="auth-header">
-            <h2>مرحبًا بك في</h2>
+            <h2>{t.welcomeTo}</h2>
             <h1>249SHADOW AI</h1>
-            <p>{mode === "login" ? "سجل الدخول للوصول إلى حسابك" : "أنشئ حسابك الخاص للبدء"}</p>
+            <p>{mode === "login" ? t.loginTitle : t.signupTitle}</p>
           </div>
 
           {error && <div className="auth-error">{error}</div>}
@@ -109,7 +101,7 @@ export default function AuthPage({ onAuthenticated }) {
                 <span className="auth-field-icon">👤</span>
                 <input
                   type="text"
-                  placeholder="اسم المستخدم أو البريد الإلكتروني"
+                  placeholder={t.usernameOrEmail}
                   value={identifier}
                   onChange={e => setIdentifier(e.target.value)}
                   autoComplete="username"
@@ -120,7 +112,7 @@ export default function AuthPage({ onAuthenticated }) {
                 <span className="auth-field-icon">🔒</span>
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="كلمة المرور"
+                  placeholder={t.passwordLabel}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"
@@ -137,22 +129,30 @@ export default function AuthPage({ onAuthenticated }) {
 
               <div className="auth-row">
                 <label className="auth-remember">
-                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
-                  تذكرني
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={e => setRemember(e.target.checked)}
+                  />
+                  {t.rememberMe}
                 </label>
-                <button type="button" className="auth-link" onClick={() => setError("تواصل مع الدعم لاستعادة كلمة المرور.")}>
-                  نسيت كلمة المرور؟
+                <button
+                  type="button"
+                  className="auth-link"
+                  onClick={() => setError(t.forgotContact)}
+                >
+                  {t.forgotPassword}
                 </button>
               </div>
 
               <button type="submit" className="auth-submit" disabled={busy}>
-                {busy ? "جارٍ الدخول..." : <>تسجيل الدخول <span>→</span></>}
+                {busy ? t.loggingIn : <>{t.loginBtn} <span>→</span></>}
               </button>
 
-              <div className="auth-divider"><span>أو</span></div>
+              <div className="auth-divider"><span>{t.orDivider}</span></div>
 
               <button type="button" className="auth-secondary" onClick={() => switchMode("signup")}>
-                إنشاء حساب جديد <span>➕</span>
+                {t.createAccount} <span>➕</span>
               </button>
             </form>
           ) : (
@@ -161,7 +161,7 @@ export default function AuthPage({ onAuthenticated }) {
                 <span className="auth-field-icon">👤</span>
                 <input
                   type="text"
-                  placeholder="اسم المستخدم"
+                  placeholder={t.usernameLabel}
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   autoComplete="username"
@@ -172,7 +172,7 @@ export default function AuthPage({ onAuthenticated }) {
                 <span className="auth-field-icon">✉️</span>
                 <input
                   type="email"
-                  placeholder="البريد الإلكتروني"
+                  placeholder={t.emailLabel}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   autoComplete="email"
@@ -183,7 +183,7 @@ export default function AuthPage({ onAuthenticated }) {
                 <span className="auth-field-icon">🔒</span>
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="كلمة المرور (٨ أحرف على الأقل)"
+                  placeholder={t.passwordMin}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="new-password"
@@ -202,27 +202,36 @@ export default function AuthPage({ onAuthenticated }) {
                 <span className="auth-field-icon">🔒</span>
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="تأكيد كلمة المرور"
+                  placeholder={t.confirmPassword}
                   value={confirm}
                   onChange={e => setConfirm(e.target.value)}
                   autoComplete="new-password"
                 />
               </label>
 
+              <label className="auth-remember" style={{ alignSelf: "flex-start" }}>
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={e => setRemember(e.target.checked)}
+                />
+                {t.rememberMe}
+              </label>
+
               <button type="submit" className="auth-submit" disabled={busy}>
-                {busy ? "جارٍ إنشاء الحساب..." : <>إنشاء حساب <span>➕</span></>}
+                {busy ? t.creatingAccount : <>{t.signupBtn} <span>➕</span></>}
               </button>
 
-              <div className="auth-divider"><span>أو</span></div>
+              <div className="auth-divider"><span>{t.orDivider}</span></div>
 
               <button type="button" className="auth-secondary" onClick={() => switchMode("login")}>
-                لدي حساب بالفعل — تسجيل الدخول <span>→</span>
+                {t.haveAccount} <span>→</span>
               </button>
             </form>
           )}
 
           <div className="auth-features">
-            {FEATURES.map(f => (
+            {t.features.map(f => (
               <div key={f.label} className="auth-feature">
                 <span className="auth-feature-icon">{f.icon}</span>
                 <span>{f.label}</span>
@@ -230,7 +239,7 @@ export default function AuthPage({ onAuthenticated }) {
             ))}
           </div>
 
-          <p className="auth-footer">© 2026 249Shadow AI. جميع الحقوق محفوظة.</p>
+          <p className="auth-footer">{t.footer}</p>
         </div>
       </div>
     </div>
