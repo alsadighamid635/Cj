@@ -1,11 +1,27 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { signup, login, setToken } from "../api.js";
 import { useLang } from "../context/LangContext.jsx";
+
+/* ── Password strength helper ────────────────────────────────── */
+function calcStrength(pw) {
+  if (!pw) return 0;
+  let score = 0;
+  if (pw.length >= 8)                                    score++;
+  if (/[A-Z]/.test(pw))                                 score++;
+  if (/[a-z]/.test(pw))                                 score++;
+  if (/\d/.test(pw))                                     score++;
+  if (/[!@#$%^&*()\-_=+\[\]{};:'",.<>/?\\|`~]/.test(pw)) score++;
+  return score; // 0‒5
+}
+
+function isStrongPassword(pw) {
+  return calcStrength(pw) === 5;
+}
 
 export default function AuthPage({ onAuthenticated }) {
   const { t, lang, setLang } = useLang();
 
-  const [mode, setMode]             = useState("login"); // "login" | "signup"
+  const [mode, setMode]             = useState("login");
   const [identifier, setIdentifier] = useState("");
   const [username, setUsername]     = useState("");
   const [email, setEmail]           = useState("");
@@ -16,16 +32,28 @@ export default function AuthPage({ onAuthenticated }) {
   const [error, setError]           = useState(null);
   const [busy, setBusy]             = useState(false);
 
+  const strength = useMemo(() => calcStrength(password), [password]);
+
   function resetFields() { setError(null); setPassword(""); setConfirm(""); }
   function switchMode(next) { setMode(next); resetFields(); }
+
+  function strengthLabel(s) {
+    if (s <= 1) return t.pwWeak;
+    if (s <= 2) return t.pwFair;
+    if (s <= 3) return t.pwGood;
+    return t.pwStrong;
+  }
+  function strengthClass(s) {
+    if (s <= 1) return "pw-weak";
+    if (s <= 2) return "pw-fair";
+    if (s <= 3) return "pw-good";
+    return "pw-strong";
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
     setError(null);
-    if (!identifier.trim() || !password) {
-      setError(t.fillLoginFields);
-      return;
-    }
+    if (!identifier.trim() || !password) { setError(t.fillLoginFields); return; }
     setBusy(true);
     try {
       const data = await login(identifier.trim(), password);
@@ -33,20 +61,15 @@ export default function AuthPage({ onAuthenticated }) {
       onAuthenticated(data);
     } catch (err) {
       setError(err.message || t.loginError);
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function handleSignup(e) {
     e.preventDefault();
     setError(null);
-    if (!username.trim() || !email.trim() || !password) {
-      setError(t.fillAll);
-      return;
-    }
-    if (password.length < 8) { setError(t.passwordMin8); return; }
-    if (password !== confirm) { setError(t.passwordsNoMatch); return; }
+    if (!username.trim() || !email.trim() || !password) { setError(t.fillAll); return; }
+    if (!isStrongPassword(password)) { setError(t.passwordWeak); return; }
+    if (password !== confirm)        { setError(t.passwordsNoMatch); return; }
     setBusy(true);
     try {
       const data = await signup(username.trim(), email.trim(), password);
@@ -54,14 +77,11 @@ export default function AuthPage({ onAuthenticated }) {
       onAuthenticated(data);
     } catch (err) {
       setError(err.message || t.signupError);
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   return (
     <div className="auth-page" dir={t.dir}>
-      {/* Language toggle on auth page */}
       <button
         className="auth-lang-toggle"
         onClick={() => setLang(lang === "ar" ? "en" : "ar")}
@@ -77,9 +97,7 @@ export default function AuthPage({ onAuthenticated }) {
         <p className="auth-brand-tag">CYBERSECURITY AI ASSISTANT</p>
         <div className="auth-brand-divider" />
         <p className="auth-brand-desc">
-          {t.brandDesc}
-          <br />
-          {t.brandSub}
+          {t.brandDesc}<br />{t.brandSub}
         </p>
         <div className="auth-brand-shield">🛡️</div>
       </div>
@@ -117,30 +135,20 @@ export default function AuthPage({ onAuthenticated }) {
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"
                 />
-                <button
-                  type="button"
-                  className="auth-field-toggle"
-                  onClick={() => setShowPassword(s => !s)}
-                  tabIndex={-1}
-                >
+                <button type="button" className="auth-field-toggle"
+                  onClick={() => setShowPassword(s => !s)} tabIndex={-1}>
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </label>
 
               <div className="auth-row">
                 <label className="auth-remember">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={e => setRemember(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={remember}
+                    onChange={e => setRemember(e.target.checked)} />
                   {t.rememberMe}
                 </label>
-                <button
-                  type="button"
-                  className="auth-link"
-                  onClick={() => setError(t.forgotContact)}
-                >
+                <button type="button" className="auth-link"
+                  onClick={() => setError(t.forgotContact)}>
                   {t.forgotPassword}
                 </button>
               </div>
@@ -157,6 +165,7 @@ export default function AuthPage({ onAuthenticated }) {
             </form>
           ) : (
             <form className="auth-form" onSubmit={handleSignup}>
+              {/* Username — accepts Arabic + English */}
               <label className="auth-field">
                 <span className="auth-field-icon">👤</span>
                 <input
@@ -165,6 +174,7 @@ export default function AuthPage({ onAuthenticated }) {
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   autoComplete="username"
+                  dir="auto"
                 />
               </label>
 
@@ -188,15 +198,31 @@ export default function AuthPage({ onAuthenticated }) {
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="new-password"
                 />
-                <button
-                  type="button"
-                  className="auth-field-toggle"
-                  onClick={() => setShowPassword(s => !s)}
-                  tabIndex={-1}
-                >
+                <button type="button" className="auth-field-toggle"
+                  onClick={() => setShowPassword(s => !s)} tabIndex={-1}>
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </label>
+
+              {/* Password strength meter */}
+              {password.length > 0 && (
+                <div className="pw-strength-wrap">
+                  <div className="pw-strength-bar">
+                    {[1,2,3,4,5].map(i => (
+                      <div
+                        key={i}
+                        className={`pw-strength-seg ${i <= strength ? strengthClass(strength) : ""}`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`pw-strength-label ${strengthClass(strength)}`}>
+                    {strengthLabel(strength)}
+                  </span>
+                </div>
+              )}
+
+              {/* Password requirements hint */}
+              <p className="pw-hint">{t.pwHint}</p>
 
               <label className="auth-field">
                 <span className="auth-field-icon">🔒</span>
@@ -210,15 +236,12 @@ export default function AuthPage({ onAuthenticated }) {
               </label>
 
               <label className="auth-remember" style={{ alignSelf: "flex-start" }}>
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={e => setRemember(e.target.checked)}
-                />
+                <input type="checkbox" checked={remember}
+                  onChange={e => setRemember(e.target.checked)} />
                 {t.rememberMe}
               </label>
 
-              <button type="submit" className="auth-submit" disabled={busy}>
+              <button type="submit" className="auth-submit" disabled={busy || !isStrongPassword(password)}>
                 {busy ? t.creatingAccount : <>{t.signupBtn} <span>➕</span></>}
               </button>
 
