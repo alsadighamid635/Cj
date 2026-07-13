@@ -2,16 +2,22 @@
 Chat API — the primary interface between the frontend and the RAG pipeline.
 
 Endpoints:
-  POST   /api/chat                         — send a message, receive an AI reply
-  GET    /api/chat/history/{session_id}    — fetch message history for a session
-  GET    /api/chat/sessions                — list all sessions for the requesting user
-  DELETE /api/chat/session/{session_id}    — delete a session (owner only)
-  PATCH  /api/chat/session/{session_id}/title — rename a session
+  POST   /api/chat                             — send a message (± file), receive an AI reply
+  GET    /api/chat/history/{session_id}        — fetch message history for a session
+  GET    /api/chat/sessions                    — list all sessions for the requesting user
+  DELETE /api/chat/session/{session_id}        — delete a session (owner only)
+  PATCH  /api/chat/session/{session_id}/title  — rename a session
 
 User identity:
   Each browser generates a persistent UUID stored in localStorage and sends it
   via the X-User-ID request header.  This provides conversation privacy without
   requiring a login system.  It is NOT a security boundary — it is a UX feature.
+
+File uploads:
+  The POST /api/chat endpoint accepts multipart/form-data so the user can
+  optionally attach one image (JPEG/PNG/GIF/WebP) or document (PDF/TXT/DOCX).
+  Images are forwarded to a Groq Vision model; document text is injected into
+  the RAG context alongside retrieved knowledge-base chunks.
 """
 
 import time
@@ -19,10 +25,11 @@ import uuid
 from collections import defaultdict, deque
 from typing import Annotated
 
-from fastapi import APIRouter, Header, HTTPException, Request
-from pydantic import BaseModel, Field, field_validator
+from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from pydantic import BaseModel, Field
 
 import config
+from core.file_processor import ALLOWED_TYPES, process_upload
 from utils.logger import get_logger
 
 logger = get_logger()
@@ -55,10 +62,9 @@ class _SlidingWindowRateLimiter:
         self._buckets: dict[str, deque] = defaultdict(deque)
 
     def is_allowed(self, key: str) -> bool:
-        now = time.monotonic()
+        now    = time.monotonic()
         bucket = self._buckets[key]
         cutoff = now - self._window
-        # Evict timestamps outside the current window
         while bucket and bucket[0] < cutoff:
             bucket.popleft()
         if len(bucket) >= self._max:
@@ -82,7 +88,7 @@ def _resolve_user_id(header_value: str | None) -> str:
     """
     if not header_value:
         return "anonymous"
-    uid = header_value.strip()[:config.MAX_USER_ID_LEN]
+    uid = header_value.strip()[: config.MAX_USER_ID_LEN]
     return uid if uid else "anonymous"
 
 
@@ -94,25 +100,13 @@ def _make_title(text: str) -> str:
     return title or "New Chat"
 
 
-# ── Request / response models ─────────────────────────────────────────────────
-
-class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=config.MAX_MESSAGE_LEN)
-    session_id: str | None = Field(default=None, max_length=64)
-
-    @field_validator("message")
-    @classmethod
-    def message_not_blank(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("Message must not be blank.")
-        return v
-
+# ── Response model ────────────────────────────────────────────────────────────
 
 class ChatResponse(BaseModel):
-    reply: str
+    reply:      str
     session_id: str
     confidence: str
-    sources: list[str]
+    sources:    list[str]
 
 
 class RenameTitleRequest(BaseModel):
@@ -123,9 +117,17 @@ class RenameTitleRequest(BaseModel):
 
 @router.post("", response_model=ChatResponse)
 async def chat(
-    req: ChatRequest,
-    x_user_id: Annotated[str | None, Header()] = None,
+    message:    str           = Form(...,  min_length=1, max_length=config.MAX_MESSAGE_LEN),
+    session_id: str | None    = Form(None, max_length=64),
+    file:       UploadFile | None = File(None),
+    x_user_id:  Annotated[str | None, Header()] = None,
 ):
+    """
+    Main chat endpoint.  Accepts multipart/form-data with:
+      • message    (required) — the user's text input
+      • session_id (optional) — continue an existing conversation
+      • file       (optional) — one image or document attachment
+    """
     user_id = _resolve_user_id(x_user_id)
 
     # Rate limit per user
@@ -136,24 +138,49 @@ async def chat(
             detail="Too many requests. Please wait a moment before sending another message.",
         )
 
-    session_id = req.session_id or str(uuid.uuid4())
-    is_first = _db.is_first_message(session_id)
+    if not message.strip():
+        raise HTTPException(status_code=422, detail="Message must not be blank.")
 
-    _db.get_or_create_session(session_id, user_id)
-    result = _pipeline.query(req.message, session_id)
+    # ── Optional file processing ───────────────────────────────────────────────
+    processed_file = None
+    if file and file.filename:
+        ct = (file.content_type or "").lower().split(";")[0].strip()
+        if ct not in ALLOWED_TYPES:
+            raise HTTPException(
+                status_code=415,
+                detail=(
+                    "Unsupported file type. "
+                    "Allowed: JPEG, PNG, GIF, WebP images · PDF, TXT, DOCX documents."
+                ),
+            )
+        try:
+            data = await file.read()
+            processed_file = process_upload(file.filename, file.content_type or "", data)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        finally:
+            await file.close()
 
-    # Auto-title: only on the first message of a new session
+    # ── Session wiring ─────────────────────────────────────────────────────────
+    sid      = session_id or str(uuid.uuid4())
+    is_first = _db.is_first_message(sid)
+    _db.get_or_create_session(sid, user_id)
+
+    # ── RAG + LLM ─────────────────────────────────────────────────────────────
+    result = _pipeline.query(message, sid, attachment=processed_file)
+
     if is_first:
-        _db.rename_session(session_id, _make_title(req.message))
+        title_text = message if not processed_file else f"[{processed_file.filename}] {message}"
+        _db.rename_session(sid, _make_title(title_text))
 
     logger.debug(
-        "chat session=%s user=%s confidence=%s",
-        session_id[:8], user_id[:8], result.confidence,
+        "chat session=%s user=%s confidence=%s has_file=%s",
+        sid[:8], user_id[:8], result.confidence, processed_file is not None,
     )
 
     return ChatResponse(
         reply=result.text,
-        session_id=session_id,
+        session_id=sid,
         confidence=result.confidence,
         sources=result.sources,
     )
@@ -173,7 +200,7 @@ async def sessions(x_user_id: Annotated[str | None, Header()] = None):
 @router.delete("/session/{session_id}")
 async def delete_session(
     session_id: str,
-    x_user_id: Annotated[str | None, Header()] = None,
+    x_user_id:  Annotated[str | None, Header()] = None,
 ):
     user_id = _resolve_user_id(x_user_id)
     deleted = _db.delete_session(session_id, user_id)
@@ -185,9 +212,9 @@ async def delete_session(
 @router.patch("/session/{session_id}/title")
 async def rename_session(
     session_id: str,
-    body: RenameTitleRequest,
-    x_user_id: Annotated[str | None, Header()] = None,
+    body:       RenameTitleRequest,
+    x_user_id:  Annotated[str | None, Header()] = None,
 ):
-    _resolve_user_id(x_user_id)   # validate header format
+    _resolve_user_id(x_user_id)
     _db.rename_session(session_id, body.title)
     return {"ok": True}

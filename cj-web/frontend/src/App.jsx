@@ -68,14 +68,27 @@ export default function App() {
     loadStats().then(setStats);
   }, []);
 
-  async function handleSend(text) {
+  async function handleSend(text, file = null) {
     setError(null);
-    const userMsg = { role: "user", content: text, timestamp: new Date().toISOString() };
+
+    // Build the user-facing message object (preview image inline when applicable)
+    const userMsg = {
+      role:       "user",
+      content:    text,
+      timestamp:  new Date().toISOString(),
+      attachment: file
+        ? {
+            name:    file.name,
+            type:    file.type,
+            preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+          }
+        : null,
+    };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      const data = await sendMessage(text, sessionId, USER_ID);
+      const data = await sendMessage(text, sessionId, USER_ID, file);
       const botMsg = {
         role:       "assistant",
         content:    data.reply,
@@ -84,15 +97,14 @@ export default function App() {
         timestamp:  new Date().toISOString(),
       };
       setMessages(prev => [...prev, botMsg]);
-      // Refresh session list so the auto-generated title appears immediately
       loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
     } catch (err) {
       setError(err.message);
       setMessages(prev => [...prev, {
-        role:      "assistant",
-        content:   `⚠️ ${err.message}`,
+        role:       "assistant",
+        content:    `⚠️ ${err.message}`,
         confidence: "low",
-        timestamp: new Date().toISOString(),
+        timestamp:  new Date().toISOString(),
       }]);
     } finally {
       setLoading(false);

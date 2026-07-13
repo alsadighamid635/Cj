@@ -31,8 +31,13 @@ COLLECTION_CHAT      = "chat_memory"
 
 GROQ_API_KEY    = os.environ.get("GROQ_API_KEY", "")
 LLM_MODEL       = "llama-3.3-70b-versatile"
+VISION_MODEL    = "meta-llama/llama-4-scout-17b-16e-instruct"   # vision-capable model
 LLM_MAX_TOKENS  = 1024
 LLM_TEMPERATURE = 0.4
+
+# Maximum upload sizes enforced at the API layer (bytes)
+MAX_UPLOAD_IMAGE_BYTES = 3 * 1024 * 1024   # 3 MB
+MAX_UPLOAD_DOC_BYTES   = 5 * 1024 * 1024   # 5 MB
 
 # ── RAG thresholds (Qdrant cosine distance: 0=identical) ─────────────────────
 

@@ -53,8 +53,32 @@ const CONFIDENCE_LABELS = {
   low:    "? learning",
 };
 
+function AttachmentPreview({ attachment }) {
+  if (!attachment) return null;
+  const isImage = attachment.type?.startsWith("image/");
+  return (
+    <div className="msg-attachment">
+      {isImage && attachment.preview ? (
+        <img
+          src={attachment.preview}
+          alt={attachment.name}
+          className="msg-attachment-img"
+        />
+      ) : (
+        <div className="msg-attachment-doc">
+          <span className="msg-attachment-icon">
+            {attachment.type === "application/pdf" ? "📄" :
+             attachment.type === "text/plain"      ? "📝" : "📎"}
+          </span>
+          <span className="msg-attachment-name">{attachment.name}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MessageBubble({ message }) {
-  const { role, content, confidence, sources, timestamp } = message;
+  const { role, content, confidence, sources, timestamp, attachment } = message;
   const isUser = role === "user";
 
   return (
@@ -68,7 +92,10 @@ export default function MessageBubble({ message }) {
       <div className="message-body">
         <div className="message-bubble">
           {isUser ? (
-            <span>{content}</span>
+            <>
+              {attachment && <AttachmentPreview attachment={attachment} />}
+              {content && <span>{content}</span>}
+            </>
           ) : (
             <div className="markdown">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={CODE_RENDERER}>

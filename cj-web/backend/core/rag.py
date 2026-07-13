@@ -37,32 +37,46 @@ class RAGPipeline:
     def __init__(self, db: Database) -> None:
         self.db = db
 
-    def query(self, user_input: str, session_id: str) -> ChatResponse:
+    def query(
+        self,
+        user_input: str,
+        session_id: str,
+        attachment=None,   # core.file_processor.ProcessedFile | None
+    ) -> ChatResponse:
         """
         Process a user message and return a structured ChatResponse.
         Side effects: persists messages to SQLite and high-confidence turns to Qdrant.
+
+        attachment: optional ProcessedFile (image or document).  When present:
+          • image    → forwarded to the Groq Vision model via build_response()
+          • document → extracted text injected into the LLM context
+        Skip the shell-ref shortcut when a file is attached so the LLM always sees it.
         """
         text = user_input.strip()
 
         # 1. Instant answer for known security tool questions (no LLM needed)
-        cmd_resp = shell_ref.get_response(text)
-        if cmd_resp:
-            self.db.save_message(session_id, "user", text)
-            self.db.save_message(session_id, "assistant", cmd_resp, confidence="high")
-            return ChatResponse(text=cmd_resp, confidence="high")
+        #    Skip when a file is attached — the user wants file analysis, not a shell snippet.
+        if not attachment:
+            cmd_resp = shell_ref.get_response(text)
+            if cmd_resp:
+                self.db.save_message(session_id, "user", text)
+                self.db.save_message(session_id, "assistant", cmd_resp, confidence="high")
+                return ChatResponse(text=cmd_resp, confidence="high")
 
         # 2. Retrieve semantically relevant chunks from all Qdrant collections
         hits = vectorstore.search_all(text)
 
         # 3. Fetch recent conversation turns to give the LLM short-term memory
-        recent = self.db.get_messages(session_id, limit=6)
+        recent  = self.db.get_messages(session_id, limit=6)
         history = [{"role": m["role"], "content": m["content"]} for m in recent]
 
         # 4. Generate response via Groq LLM (falls back to chunk formatting if unavailable)
-        response_text, confidence, sources = build_response(text, hits, history)
+        response_text, confidence, sources = build_response(
+            text, hits, history, attachment=attachment
+        )
 
-        # 5. Scope guard — only decline if the LLM also has no answer
-        if confidence == "low" and not is_cybersecurity_related(text):
+        # 5. Scope guard — only decline if the LLM also has no answer (skip for file uploads)
+        if not attachment and confidence == "low" and not is_cybersecurity_related(text):
             reply = out_of_scope_reply(text)
             self.db.save_message(session_id, "user", text)
             self.db.save_message(session_id, "assistant", reply, confidence="low")
@@ -73,7 +87,10 @@ class RAGPipeline:
             self.db.save_unanswered(session_id, text)
 
         # 7. Persist the Q&A exchange to SQLite
-        self.db.save_message(session_id, "user", text)
+        display_text = text
+        if attachment:
+            display_text = f"[{attachment.filename}] {text}"
+        self.db.save_message(session_id, "user", display_text)
         self.db.save_message(
             session_id, "assistant", response_text,
             confidence=confidence,

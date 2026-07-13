@@ -45,12 +45,27 @@ function buildHeaders(userId, extra = {}) {
 
 // ── Chat endpoints ────────────────────────────────────────────────────────────
 
-export async function sendMessage(message, sessionId, userId) {
-  const res = await fetchWithTimeout(`${BASE}/chat`, {
-    method: "POST",
-    headers: buildHeaders(userId),
-    body: JSON.stringify({ message, session_id: sessionId }),
-  }, CHAT_TIMEOUT_MS);
+export async function sendMessage(message, sessionId, userId, file = null) {
+  let body, headers;
+
+  if (file) {
+    // multipart/form-data — let the browser set the Content-Type + boundary
+    const fd = new FormData();
+    fd.append("message",    message);
+    if (sessionId) fd.append("session_id", sessionId);
+    fd.append("file", file, file.name);
+    body    = fd;
+    headers = userId ? { "X-User-ID": userId } : {};
+  } else {
+    body    = JSON.stringify({ message, session_id: sessionId });
+    headers = buildHeaders(userId);
+  }
+
+  const res = await fetchWithTimeout(
+    `${BASE}/chat`,
+    { method: "POST", headers, body },
+    CHAT_TIMEOUT_MS,
+  );
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
     throw new Error(detail?.detail ?? `Server error (${res.status})`);
