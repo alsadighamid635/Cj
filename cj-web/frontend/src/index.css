@@ -1642,3 +1642,152 @@ body {
   .admin-panel { max-height: 92vh; border-radius: var(--radius-sm); }
   .admin-td-email { display: none; }
 }
+
+/* ── Admin Login card (hidden portal) ────────────────────────── */
+.admin-login-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  animation: slideUp .25s ease;
+}
+
+.admin-login-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.admin-login-shield {
+  font-size: 42px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 12px rgba(239,68,68,.4));
+}
+
+.admin-login-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px 0;
+}
+
+.admin-login-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+/* ── Delete user button ───────────────────────────────────────── */
+.btn-del-user {
+  background: rgba(239,68,68,.12);
+  border: 1px solid rgba(239,68,68,.3);
+  color: #ef4444;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background .15s, border-color .15s;
+}
+.btn-del-user:hover { background: rgba(239,68,68,.25); border-color: #ef4444; }
+.btn-del-user:disabled { opacity: .4; cursor: not-allowed; }
+
+.admin-td-protected { color: var(--text-dim); font-size: 12px; }
+
+/* Admin badge */
+.admin-badge-admin {
+  display: inline-block;
+  margin-right: 6px;
+  background: rgba(251,191,36,.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251,191,36,.3);
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 1px 5px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* Highlight admin row */
+.admin-row-self td { background: rgba(251,191,36,.04) !important; }
+
+/* ── Confirm delete dialog ────────────────────────────────────── */
+.admin-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: var(--radius);
+}
+
+.admin-confirm-box {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(239,68,68,.4);
+  border-radius: var(--radius-sm);
+  padding: 28px 24px 20px;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5);
+}
+
+.admin-confirm-icon { font-size: 32px; margin-bottom: 8px; }
+.admin-confirm-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+.admin-confirm-msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+.admin-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-del-confirm {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-del-confirm:hover { background: #dc2626; }
+.btn-del-confirm:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Secret click hint pulse (invisible element on auth page) ── */
+.secret-trigger {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* invisible by default */
+  background: transparent;
+}
+.secret-trigger.activated {
+  animation: secretPulse .4s ease;
+}
+@keyframes secretPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
+  70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}

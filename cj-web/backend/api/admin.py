@@ -1,8 +1,9 @@
 """
 Admin / stats API endpoints.
 
-GET /api/admin/stats — combined DB and vector-store statistics (public, used by topbar)
-GET /api/admin/users — list all registered users (admin only)
+GET    /api/admin/stats         — combined DB and vector-store statistics (public)
+GET    /api/admin/users         — list all registered users (admin only)
+DELETE /api/admin/users/{uid}   — delete a user account (admin only)
 """
 
 from typing import Annotated
@@ -45,6 +46,20 @@ async def stats():
 
 @router.get("/users")
 async def list_users(_: Annotated[str, Depends(_require_admin)]):
-    """Return all registered users. Admin only."""
+    """Return all registered users with stats. Admin only."""
     users = _db.list_all_users()
     return {"users": users, "total": len(users)}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    admin_id: Annotated[str, Depends(_require_admin)],
+):
+    """Permanently delete a user account. Admin only. Cannot delete yourself."""
+    if user_id == admin_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own admin account.")
+    deleted = _db.delete_user(user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"ok": True, "deleted_user_id": user_id}

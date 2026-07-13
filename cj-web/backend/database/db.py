@@ -255,13 +255,41 @@ class Database:
             self._put_conn(conn)
 
     def list_all_users(self) -> list[dict]:
+        """Return all users with their session and message counts."""
         conn = self._get_conn()
         try:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT id, username, email, created_at FROM users ORDER BY created_at DESC"
-                )
+                cur.execute("""
+                    SELECT
+                        u.id, u.username, u.email, u.created_at,
+                        COUNT(DISTINCT s.id)  AS session_count,
+                        COUNT(DISTINCT m.id)  AS message_count
+                    FROM users u
+                    LEFT JOIN sessions s ON s.user_id = u.id
+                    LEFT JOIN messages m ON m.session_id = s.id
+                    GROUP BY u.id, u.username, u.email, u.created_at
+                    ORDER BY u.created_at DESC
+                """)
                 return [dict(r) for r in cur.fetchall()]
+        finally:
+            self._put_conn(conn)
+
+    def delete_user(self, user_id: str) -> bool:
+        """Delete a user and all their sessions and messages. Returns True if deleted."""
+        conn = self._get_conn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    # Delete all messages in user sessions first
+                    cur.execute("""
+                        DELETE FROM messages
+                        WHERE session_id IN (
+                            SELECT id FROM sessions WHERE user_id = %s
+                        )
+                    """, (user_id,))
+                    cur.execute("DELETE FROM sessions WHERE user_id = %s", (user_id,))
+                    cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+                    return cur.rowcount > 0
         finally:
             self._put_conn(conn)
 

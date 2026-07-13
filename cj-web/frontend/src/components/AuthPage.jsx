@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { signup, login, setToken } from "../api.js";
 import { useLang } from "../context/LangContext.jsx";
+import AdminLogin from "./AdminLogin.jsx";
 
 /* ── Password strength helper ────────────────────────────────── */
 function calcStrength(pw) {
@@ -18,6 +19,10 @@ function isStrongPassword(pw) {
   return calcStrength(pw) === 5;
 }
 
+// ── Secret click to reveal admin login ────────────────────────────────────
+const SECRET_CLICKS   = 7;   // number of clicks needed
+const SECRET_WINDOW   = 8000; // ms window to complete the clicks
+
 export default function AuthPage({ onAuthenticated }) {
   const { t, lang, setLang } = useLang();
 
@@ -31,6 +36,30 @@ export default function AuthPage({ onAuthenticated }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]           = useState(null);
   const [busy, setBusy]             = useState(false);
+
+  // Secret click state
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [secretPulse, setSecretPulse]       = useState(false);
+  const clickCountRef  = useRef(0);
+  const clickTimerRef  = useRef(null);
+
+  const handleSecretClick = useCallback(() => {
+    clickCountRef.current += 1;
+    setSecretPulse(true);
+    setTimeout(() => setSecretPulse(false), 400);
+
+    // Reset counter after window expires
+    clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      clickCountRef.current = 0;
+    }, SECRET_WINDOW);
+
+    if (clickCountRef.current >= SECRET_CLICKS) {
+      clickCountRef.current = 0;
+      clearTimeout(clickTimerRef.current);
+      setShowAdminLogin(true);
+    }
+  }, []);
 
   const strength = useMemo(() => calcStrength(password), [password]);
 
@@ -262,9 +291,25 @@ export default function AuthPage({ onAuthenticated }) {
             ))}
           </div>
 
+          {/* Secret trigger — invisible dot at the bottom of the card.
+              Click it 7 times within 8 seconds to open the admin login. */}
+          <div
+            className={`secret-trigger ${secretPulse ? "activated" : ""}`}
+            onClick={handleSecretClick}
+            aria-hidden="true"
+          />
+
           <p className="auth-footer">{t.footer}</p>
         </div>
       </div>
+
+      {/* Admin login modal — revealed by secret clicks */}
+      {showAdminLogin && (
+        <AdminLogin
+          onClose={() => setShowAdminLogin(false)}
+          onAuthenticated={onAuthenticated}
+        />
+      )}
     </div>
   );
 }

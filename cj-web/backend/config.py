@@ -32,8 +32,9 @@ COLLECTION_CHAT      = "chat_memory"
 
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
-# Username of the system owner — only this account can access /api/admin/users
+# Username and password of the system owner — account is auto-created on startup
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "249shadow")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 # ── Authentication ────────────────────────────────────────────────────────────
 

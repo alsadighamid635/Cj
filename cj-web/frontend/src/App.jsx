@@ -195,7 +195,7 @@ export default function App() {
         <InputBar onSend={handleSend} disabled={loading} />
       </div>
 
-      {showAdmin && <AdminPage onClose={() => setShowAdmin(false)} />}
+      {showAdmin && <AdminPage onClose={() => setShowAdmin(false)} currentUser={user} />}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { loadAdminUsers, loadSources, addSource, deleteSource, refreshSources, loadStats } from "../api.js";
+import { loadAdminUsers, deleteAdminUser, loadSources, addSource, deleteSource, refreshSources, loadStats } from "../api.js";
 import { useLang } from "../context/LangContext.jsx";
 
-export default function AdminPage({ onClose }) {
+export default function AdminPage({ onClose, currentUser }) {
   const { t } = useLang();
   const [tab, setTab] = useState("users"); // "users" | "sources"
 
@@ -39,7 +39,7 @@ export default function AdminPage({ onClose }) {
         </div>
 
         {/* ── Tab content ── */}
-        {tab === "users"   && <UsersTab t={t} />}
+        {tab === "users"   && <UsersTab t={t} currentUser={currentUser} />}
         {tab === "sources" && <SourcesTab t={t} />}
 
         <div className="admin-footer">
@@ -56,10 +56,13 @@ export default function AdminPage({ onClose }) {
 /* ────────────────────────────────────────────────────────────────
    Tab 1 — Users
 ──────────────────────────────────────────────────────────────── */
-function UsersTab({ t }) {
-  const [users, setUsers]     = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
+function UsersTab({ t, currentUser }) {
+  const [users, setUsers]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+  const [deleting, setDeleting]     = useState(null);   // user_id being deleted
+  const [confirm, setConfirm]       = useState(null);   // user to confirm-delete
+  const [search, setSearch]         = useState("");
 
   useEffect(() => {
     loadAdminUsers()
@@ -77,12 +80,40 @@ function UsersTab({ t }) {
     } catch { return iso; }
   }
 
+  async function handleDelete(user) {
+    setDeleting(user.id);
+    setConfirm(null);
+    try {
+      await deleteAdminUser(user.id);
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  const filtered = users.filter(u =>
+    u.username.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="admin-body">
+
+      {/* Stats strip */}
       {!loading && !error && (
         <div className="admin-stat-bar">
           <span className="admin-stat-label">{t.totalUsers}</span>
           <span className="admin-stat-value">{users.length}</span>
+          {/* Search */}
+          <input
+            className="form-input"
+            placeholder="🔍 بحث بالاسم أو البريد..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ marginRight: "auto", maxWidth: "220px", padding: "6px 12px", fontSize: "13px" }}
+          />
         </div>
       )}
 
@@ -97,29 +128,83 @@ function UsersTab({ t }) {
 
       {error && <div className="auth-error" style={{ margin: "16px" }}>{error}</div>}
 
-      {!loading && !error && users.length === 0 && (
-        <div className="admin-empty">{t.noUsers}</div>
+      {!loading && !error && filtered.length === 0 && (
+        <div className="admin-empty">{search ? "لا توجد نتائج مطابقة." : t.noUsers}</div>
       )}
 
-      {!loading && !error && users.length > 0 && (
+      {/* Confirm-delete dialog */}
+      {confirm && (
+        <div className="admin-confirm-overlay">
+          <div className="admin-confirm-box">
+            <div className="admin-confirm-icon">⚠️</div>
+            <p className="admin-confirm-title">تأكيد الحذف</p>
+            <p className="admin-confirm-msg">
+              سيتم حذف حساب <strong>{confirm.username}</strong> وجميع محادثاته نهائياً.
+              لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <div className="admin-confirm-actions">
+              <button
+                className="btn-del-confirm"
+                onClick={() => handleDelete(confirm)}
+                disabled={!!deleting}
+              >
+                {deleting === confirm.id ? "جارٍ الحذف..." : "نعم، احذف الحساب"}
+              </button>
+              <button className="auth-secondary" onClick={() => setConfirm(null)}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && filtered.length > 0 && (
         <table className="admin-table">
           <thead>
             <tr>
               <th>#</th>
               <th>{t.usernameCol}</th>
               <th>{t.emailCol}</th>
+              <th>المحادثات</th>
+              <th>الرسائل</th>
               <th>{t.createdCol}</th>
+              <th>إجراء</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u, i) => (
-              <tr key={u.id}>
-                <td className="admin-td-num">{i + 1}</td>
-                <td><span className="admin-username">👤 {u.username}</span></td>
-                <td className="admin-td-email">{u.email}</td>
-                <td className="admin-td-date">{formatDate(u.created_at)}</td>
-              </tr>
-            ))}
+            {filtered.map((u, i) => {
+              const isAdmin  = u.username.toLowerCase() === "249shadow";
+              const isSelf   = currentUser && u.id === currentUser.id;
+              return (
+                <tr key={u.id} className={isAdmin ? "admin-row-self" : ""}>
+                  <td className="admin-td-num">{i + 1}</td>
+                  <td>
+                    <span className="admin-username">
+                      {isAdmin ? "👑" : "👤"} {u.username}
+                      {isAdmin && <span className="admin-badge-admin">مدير</span>}
+                    </span>
+                  </td>
+                  <td className="admin-td-email">{u.email}</td>
+                  <td className="admin-td-num">{u.session_count ?? 0}</td>
+                  <td className="admin-td-num">{u.message_count ?? 0}</td>
+                  <td className="admin-td-date">{formatDate(u.created_at)}</td>
+                  <td>
+                    {isAdmin || isSelf ? (
+                      <span className="admin-td-protected" title="لا يمكن حذف حساب المدير">—</span>
+                    ) : (
+                      <button
+                        className="btn-del-user"
+                        onClick={() => setConfirm(u)}
+                        disabled={!!deleting}
+                        title="حذف الحساب"
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

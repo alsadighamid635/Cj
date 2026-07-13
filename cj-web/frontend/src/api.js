@@ -226,3 +226,9 @@ export async function loadAdminUsers() {
   if (!res.ok) throw new Error(await parseErrorDetail(res));
   return res.json();
 }
+
+export async function deleteAdminUser(userId) {
+  const res = await authFetch(`/admin/users/${userId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
+  return res.json();
+}

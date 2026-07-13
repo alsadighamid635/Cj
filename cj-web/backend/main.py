@@ -32,6 +32,25 @@ from api import chat as chat_router
 from api import sources as sources_router
 from api import admin as admin_router
 
+
+def _ensure_admin_exists(db: Database) -> None:
+    """Create the admin account on first run if it doesn't exist yet."""
+    if not config.ADMIN_PASSWORD:
+        logger.warning("ADMIN_PASSWORD not set — skipping admin account creation.")
+        return
+    existing = db.get_user_by_username(config.ADMIN_USERNAME)
+    if existing:
+        logger.info("Admin account '%s' already exists.", config.ADMIN_USERNAME)
+        return
+    import uuid, bcrypt
+    user_id      = str(uuid.uuid4())
+    pw_hash      = bcrypt.hashpw(
+        config.ADMIN_PASSWORD.encode(), bcrypt.gensalt()
+    ).decode()
+    admin_email  = f"{config.ADMIN_USERNAME}@admin.local"
+    db.create_user(user_id, config.ADMIN_USERNAME, admin_email, pw_hash)
+    logger.info("Admin account '%s' created successfully.", config.ADMIN_USERNAME)
+
 # ── Logger must be set up before anything else logs ───────────────────────────
 logger = setup_logger(config.LOG_FILE)
 
@@ -61,6 +80,9 @@ async def lifespan(app: FastAPI):
     chat_router.init(pipeline, db)
     sources_router.init(db, scraper, scheduler)
     admin_router.init(db)
+
+    # Auto-create admin account if it doesn't exist yet
+    _ensure_admin_exists(db)
 
     scheduler.start(db, scraper)
 
