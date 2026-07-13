@@ -53,20 +53,22 @@ def _ensure_collection(name: str):
         logger.info("Created Qdrant collection '%s'", name)
 
 
-# ── Embedding (local, same model chromadb used) ───────────────────────────────
+# ── Embedding (local, using sentence-transformers) ───────────────────────────
 
 _embedder = None
 
 def _get_embedder():
     global _embedder
     if _embedder is None:
-        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-        _embedder = DefaultEmbeddingFunction()
+        from sentence_transformers import SentenceTransformer
+        _embedder = SentenceTransformer("all-MiniLM-L6-v2")
     return _embedder
 
 
 def _embed(texts: list[str]) -> list[list[float]]:
-    return _get_embedder()(texts)
+    model = _get_embedder()
+    embeddings = model.encode(texts, convert_to_numpy=True)
+    return embeddings.tolist()
 
 
 # ── Stable ID helper ──────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-chromadb
+sentence-transformers
 feedparser
 beautifulsoup4
 requests
