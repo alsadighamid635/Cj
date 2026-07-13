@@ -1,6 +1,6 @@
 {
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build",
+  "buildCommand": "yarn build",
+  "installCommand": "yarn install",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

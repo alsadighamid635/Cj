@@ -46,4 +46,16 @@ All set as Replit Secrets:
 
 Default admin username: `249shadow` (override with `ADMIN_USERNAME` secret). Admin endpoints are at `/api/admin/`.
 
+## Production deployment
+
+| Service | Platform | URL |
+|---|---|---|
+| Frontend | Vercel | https://frontend-livid-three-77.vercel.app |
+| Backend | Render | https://cj-ww1u.onrender.com |
+
+- `VITE_API_URL` is set on Vercel pointing to the Render backend
+- All 4 backend secrets are set in Render (SESSION_SECRET, GROQ_API_KEY, QDRANT_URL, QDRANT_API_KEY)
+- Frontend uses `yarn` as package manager on Vercel (npm has a bug on Vercel's build environment)
+- Auto-deploy on both platforms triggers from pushes to the `main` branch on GitHub
+
 ## User preferences
