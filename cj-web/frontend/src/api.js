@@ -1,12 +1,10 @@
-// In production (Vercel) point to the Render backend via VITE_API_URL.
-// In dev the Vite proxy handles /api → localhost:8000.
 const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
 
-export async function sendMessage(message, sessionId) {
+export async function sendMessage(message, sessionId, userId) {
   const res = await fetch(`${BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, session_id: sessionId }),
+    body: JSON.stringify({ message, session_id: sessionId, user_id: userId }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -18,14 +16,24 @@ export async function loadHistory(sessionId) {
   return res.json();
 }
 
-export async function loadSessions() {
-  const res = await fetch(`${BASE}/chat/sessions`);
+export async function loadSessions(userId) {
+  const params = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
+  const res = await fetch(`${BASE}/chat/sessions${params}`);
   if (!res.ok) return { sessions: [] };
   return res.json();
 }
 
-export async function deleteSession(sessionId) {
-  await fetch(`${BASE}/chat/session/${sessionId}`, { method: "DELETE" });
+export async function deleteSession(sessionId, userId) {
+  const params = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
+  await fetch(`${BASE}/chat/session/${sessionId}${params}`, { method: "DELETE" });
+}
+
+export async function renameSession(sessionId, title) {
+  await fetch(`${BASE}/chat/session/${sessionId}/title`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
 }
 
 export async function loadSources() {

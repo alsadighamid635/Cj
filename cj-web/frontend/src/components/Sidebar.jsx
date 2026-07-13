@@ -27,8 +27,11 @@ export default function Sidebar({
             key={s.id}
             className={`session-item ${s.id === activeId ? "active" : ""}`}
             onClick={() => onSwitch(s.id)}
+            title={s.title || "New Chat"}
           >
-            <span className="session-title">💬 {s.title || "Chat"}</span>
+            <span className="session-title">
+              💬 {s.title && s.title !== "New Chat" ? s.title : "New Chat"}
+            </span>
             <button
               className="session-del"
               onClick={e => { e.stopPropagation(); onDelete(s.id); }}

@@ -2,7 +2,7 @@
 SQLite persistence layer for CJ-AI Web.
 
 Tables:
-  sessions      — chat sessions (id, title, created_at)
+  sessions      — chat sessions (id, title, user_id, created_at)
   messages      — individual messages per session
   sources       — RSS feeds and web pages to scrape
   unanswered    — cybersecurity questions with no confident answer
@@ -37,6 +37,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS sessions (
                 id         TEXT PRIMARY KEY,
                 title      TEXT,
+                user_id    TEXT DEFAULT 'anonymous',
                 created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS messages (
@@ -73,24 +74,31 @@ class Database:
             );
         """)
         self._conn.commit()
+        # Migrate: add user_id column if it doesn't exist yet
+        try:
+            self._conn.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT DEFAULT 'anonymous'")
+            self._conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
     # ── Sessions ──────────────────────────────────────────────────────────────
 
-    def get_or_create_session(self, session_id: str) -> dict:
+    def get_or_create_session(self, session_id: str, user_id: str = "anonymous") -> dict:
         conn = self.connect()
         row = conn.execute("SELECT * FROM sessions WHERE id=?", (session_id,)).fetchone()
         if row:
             return dict(row)
         conn.execute(
-            "INSERT INTO sessions(id,title,created_at) VALUES(?,?,?)",
-            (session_id, "New Chat", _now()),
+            "INSERT INTO sessions(id,title,user_id,created_at) VALUES(?,?,?,?)",
+            (session_id, "New Chat", user_id, _now()),
         )
         conn.commit()
-        return {"id": session_id, "title": "New Chat", "created_at": _now()}
+        return {"id": session_id, "title": "New Chat", "user_id": user_id, "created_at": _now()}
 
-    def list_sessions(self) -> list[dict]:
+    def list_sessions(self, user_id: str = "anonymous") -> list[dict]:
         rows = self.connect().execute(
-            "SELECT * FROM sessions ORDER BY created_at DESC LIMIT 50"
+            "SELECT * FROM sessions WHERE user_id=? ORDER BY created_at DESC LIMIT 50",
+            (user_id,),
         ).fetchall()
         return [dict(r) for r in rows]
 
@@ -99,11 +107,23 @@ class Database:
         conn.execute("UPDATE sessions SET title=? WHERE id=?", (title, session_id))
         conn.commit()
 
-    def delete_session(self, session_id: str):
+    def delete_session(self, session_id: str, user_id: str = "anonymous"):
         conn = self.connect()
-        conn.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
-        conn.execute("DELETE FROM sessions WHERE id=?", (session_id,))
-        conn.commit()
+        # Verify ownership before deleting
+        row = conn.execute(
+            "SELECT id FROM sessions WHERE id=? AND user_id=?", (session_id, user_id)
+        ).fetchone()
+        if row:
+            conn.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
+            conn.execute("DELETE FROM sessions WHERE id=?", (session_id,))
+            conn.commit()
+
+    def is_first_message(self, session_id: str) -> bool:
+        """Returns True if this session has no messages yet."""
+        count = self.connect().execute(
+            "SELECT COUNT(*) FROM messages WHERE session_id=?", (session_id,)
+        ).fetchone()[0]
+        return count == 0
 
     # ── Messages ──────────────────────────────────────────────────────────────
 
@@ -125,7 +145,6 @@ class Database:
         result = []
         for r in reversed(rows):
             msg = dict(r)
-            # sources is stored as a JSON string — deserialise before returning
             raw = msg.get("sources", "[]")
             try:
                 msg["sources"] = json.loads(raw) if isinstance(raw, str) else raw

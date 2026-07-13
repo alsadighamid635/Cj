@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import ChatWindow from "./components/ChatWindow.jsx";
 import InputBar from "./components/InputBar.jsx";
@@ -15,6 +15,17 @@ const SUGGESTIONS = [
   "What is Kerberoasting?",
 ];
 
+/** Persistent user identity — survives across tabs and browser restarts */
+function getOrCreateUserId() {
+  let id = localStorage.getItem("cj_user_id");
+  if (!id) {
+    id = uuidv4();
+    localStorage.setItem("cj_user_id", id);
+  }
+  return id;
+}
+
+/** Current session — resets when browser tab is closed */
 function getOrCreateSessionId() {
   let id = sessionStorage.getItem("cj_session_id");
   if (!id) {
@@ -23,6 +34,8 @@ function getOrCreateSessionId() {
   }
   return id;
 }
+
+const USER_ID = getOrCreateUserId();
 
 export default function App() {
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
@@ -38,9 +51,9 @@ export default function App() {
     loadHistory(sessionId).then(d => setMessages(d.messages || []));
   }, [sessionId]);
 
-  // Load sessions list
+  // Load only this user's sessions
   useEffect(() => {
-    loadSessions().then(d => setSessions(d.sessions || []));
+    loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
     loadStats().then(setStats);
   }, []);
 
@@ -49,7 +62,7 @@ export default function App() {
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
     try {
-      const data = await sendMessage(text, sessionId);
+      const data = await sendMessage(text, sessionId, USER_ID);
       const botMsg = {
         role: "assistant",
         content: data.reply,
@@ -58,8 +71,8 @@ export default function App() {
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, botMsg]);
-      // Refresh sessions so the new session appears in sidebar
-      loadSessions().then(d => setSessions(d.sessions || []));
+      // Refresh sessions list so new title appears in sidebar
+      loadSessions(USER_ID).then(d => setSessions(d.sessions || []));
     } catch {
       setMessages(prev => [...prev, {
         role: "assistant",
@@ -87,7 +100,7 @@ export default function App() {
   }
 
   async function removeSession(id) {
-    await deleteSession(id);
+    await deleteSession(id, USER_ID);
     if (id === sessionId) newChat();
     setSessions(prev => prev.filter(s => s.id !== id));
   }
