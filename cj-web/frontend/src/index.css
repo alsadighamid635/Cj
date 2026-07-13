@@ -174,9 +174,21 @@ body {
 }
 .session-item:hover .session-del { opacity: 1; }
 
+.sidebar-stat-pill {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 7px;
+}
+
 .sidebar-footer {
   border-top: 1px solid var(--border);
   padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .btn-sources {
@@ -195,6 +207,121 @@ body {
 }
 .btn-sources:hover { background: var(--bg-hover); color: var(--text-primary); }
 .btn-sources.active { border-color: var(--accent); color: var(--accent); }
+
+/* Admin button in sidebar — only shown to system owner */
+.sidebar-btn-admin {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(0,212,170,0.06);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sidebar-btn-admin:hover { background: rgba(0,212,170,0.14); }
+.sidebar-btn-icon { font-size: 14px; }
+
+.sidebar-footer-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2px 0;
+}
+
+/* User row at the very bottom of sidebar */
+.sidebar-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 2px 2px;
+}
+
+.sidebar-user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-user-avatar {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.sidebar-user-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-username {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-email {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Small icon-only buttons (lang + logout) in sidebar user row */
+.sidebar-btn-icon-only {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sidebar-btn-icon-only:hover { color: var(--accent); border-color: var(--accent); }
+
+.sidebar-btn-logout {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.sidebar-btn-logout:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(248,81,73,0.1);
+}
 
 /* ── Main area ────────────────────────────────────────────────────── */
 .main-area {

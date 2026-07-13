@@ -160,6 +160,11 @@ export default function App() {
         onDelete={removeSession}
         onSourcesClick={() => setShowSources(true)}
         showSourcesActive={showSources}
+        user={user}
+        isAdmin={isAdmin}
+        onLogout={logout}
+        onAdminClick={() => setShowAdmin(true)}
+        stats={stats}
       />
 
       <div className="main-area">
@@ -173,8 +178,6 @@ export default function App() {
             {stats.total_vectors != null && (
               <span className="topbar-stats">{stats.total_vectors} {t.vectors}</span>
             )}
-            <span className="topbar-user" title={user.email}>👤 {user.username}</span>
-
             {/* Language toggle */}
             <button
               className="btn-lang"
@@ -182,27 +185,6 @@ export default function App() {
               title={lang === "ar" ? "Switch to English" : "التبديل إلى العربية"}
             >
               {lang === "ar" ? "EN" : "ع"}
-            </button>
-
-            {/* Admin panel button — visible only to the system owner */}
-            {isAdmin && (
-              <button
-                className="btn-admin"
-                onClick={() => setShowAdmin(true)}
-                title={t.adminPanel}
-              >
-                ⚙️ {t.adminPanel}
-              </button>
-            )}
-
-            {/* Logout */}
-            <button
-              className="btn-logout"
-              onClick={logout}
-              title={t.logoutTooltip}
-            >
-              <span className="btn-logout-icon">⏻</span>
-              <span className="btn-logout-label">{t.logoutBtn}</span>
             </button>
           </div>
         </div>
