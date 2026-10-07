@@ -90,6 +90,19 @@ def require_user(
     return _decode_token(credentials.credentials)
 
 
+def is_admin_username(username: str) -> bool:
+    """Return whether a username matches the configured administrator account."""
+    return username.casefold() == config.ADMIN_USERNAME.strip().casefold()
+
+
+def require_admin(user_id: Annotated[str, Depends(require_user)]) -> str:
+    """FastAPI dependency: allow only the configured administrator account."""
+    user = _db.get_user_by_id(user_id) if _db else None
+    if not user or not is_admin_username(user.get("username", "")):
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    return user_id
+
+
 # ── Request/response models ──────────────────────────────────────────────────────
 
 class SignupRequest(BaseModel):
@@ -137,18 +150,25 @@ class AuthResponse(BaseModel):
     user_id:  str
     username: str
     email:    str
+    is_admin: bool
 
 
 class MeResponse(BaseModel):
     user_id:  str
     username: str
     email:    str
+    is_admin: bool
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @router.post("/signup", response_model=AuthResponse)
 async def signup(body: SignupRequest):
+    if is_admin_username(body.username):
+        raise HTTPException(
+            status_code=409,
+            detail="This username is reserved for the administrator.",
+        )
     if _db.get_user_by_username(body.username):
         raise HTTPException(status_code=409, detail="This username is already taken.")
     if _db.get_user_by_email(body.email):
@@ -159,7 +179,13 @@ async def signup(body: SignupRequest):
     logger.info("New account created: user_id=%s username=%s", user_id[:8], body.username)
 
     token = _create_token(user_id)
-    return AuthResponse(token=token, user_id=user_id, username=body.username, email=body.email.lower())
+    return AuthResponse(
+        token=token,
+        user_id=user_id,
+        username=body.username,
+        email=body.email.lower(),
+        is_admin=False,
+    )
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -171,7 +197,13 @@ async def login(body: LoginRequest):
         raise HTTPException(status_code=401, detail="Incorrect username/email or password.")
 
     token = _create_token(user["id"])
-    return AuthResponse(token=token, user_id=user["id"], username=user["username"], email=user["email"])
+    return AuthResponse(
+        token=token,
+        user_id=user["id"],
+        username=user["username"],
+        email=user["email"],
+        is_admin=is_admin_username(user["username"]),
+    )
 
 
 @router.get("/me", response_model=MeResponse)
@@ -179,4 +211,9 @@ async def me(user_id: Annotated[str, Depends(require_user)]):
     user = _db.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=401, detail="Account no longer exists.")
-    return MeResponse(user_id=user["id"], username=user["username"], email=user["email"])
+    return MeResponse(
+        user_id=user["id"],
+        username=user["username"],
+        email=user["email"],
+        is_admin=is_admin_username(user["username"]),
+    )
