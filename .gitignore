@@ -219,3 +219,7 @@ __marimo__/
 *.db-shm
 *.db-wal
 *.db-journal
+
+# Runtime databases and vector-store state
+cj-ai/database/*.db
+cj-web/backend/data/
