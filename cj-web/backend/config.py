@@ -7,6 +7,7 @@ import os
 import sys
 import logging
 from pathlib import Path
+from urllib.parse import urlsplit
 
 # ── Directory layout ──────────────────────────────────────────────────────────
 
@@ -35,6 +36,48 @@ COLLECTION_CHAT      = "chat_memory"
 # Username and password of the system owner — account is auto-created on startup
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "249shadow")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+
+_DEFAULT_CORS_ORIGINS = (
+    "https://frontend-livid-three-77.vercel.app",
+    "https://cj-sigma.vercel.app",
+    "http://localhost:5173",
+)
+
+
+def _parse_cors_origins(raw: str) -> list[str]:
+    """Parse explicit browser origins; wildcard origins are never accepted."""
+    origins = []
+    for value in raw.split(","):
+        origin = value.strip().rstrip("/")
+        if not origin:
+            continue
+        parsed = urlsplit(origin)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.netloc
+            or "*" in parsed.netloc
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "CORS_ORIGINS must be a comma-separated list of exact http(s) origins; "
+                "wildcards and URL paths are not allowed."
+            )
+        if origin not in origins:
+            origins.append(origin)
+    if not origins:
+        raise ValueError("CORS_ORIGINS must contain at least one exact origin.")
+    return origins
+
+
+CORS_ORIGINS = _parse_cors_origins(
+    os.environ.get("CORS_ORIGINS", ",".join(_DEFAULT_CORS_ORIGINS))
+)
 
 # ── Authentication ────────────────────────────────────────────────────────────
 
