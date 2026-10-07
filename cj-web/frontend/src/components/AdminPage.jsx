@@ -173,8 +173,9 @@ function UsersTab({ t, currentUser }) {
           </thead>
           <tbody>
             {filtered.map((u, i) => {
-              const isAdmin  = u.username.toLowerCase() === "249shadow";
-              const isSelf   = currentUser && u.id === currentUser.id;
+              const isAdmin  = currentUser
+                && u.username.toLowerCase() === currentUser.username.toLowerCase();
+              const isSelf   = currentUser && u.id === (currentUser.user_id ?? currentUser.id);
               return (
                 <tr key={u.id} className={isAdmin ? "admin-row-self" : ""}>
                   <td className="admin-td-num">{i + 1}</td>
@@ -224,10 +225,12 @@ function SourcesTab({ t }) {
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding]     = useState(false);
   const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
   useEffect(() => {
     Promise.all([loadSources(), loadStats()])
       .then(([d, s]) => { setSources(d.sources || []); setStats(s); })
+      .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -235,26 +238,49 @@ function SourcesTab({ t }) {
     e.preventDefault();
     if (!name.trim() || !url.trim()) return;
     setAdding(true);
-    await addSource(name.trim(), url.trim(), type);
-    const d = await loadSources();
-    setSources(d.sources || []);
-    setName(""); setUrl("");
-    setAdding(false);
+    setError(null);
+    try {
+      await addSource(name.trim(), url.trim(), type);
+      const d = await loadSources();
+      setSources(d.sources || []);
+      setName(""); setUrl("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAdding(false);
+    }
   }
 
   async function handleDelete(id) {
-    await deleteSource(id);
-    setSources(prev => prev.filter(s => s.id !== id));
+    setError(null);
+    try {
+      await deleteSource(id);
+      setSources(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function handleRefresh() {
     setRefreshing(true);
-    await refreshSources();
-    setTimeout(async () => {
-      const [d, s] = await Promise.all([loadSources(), loadStats()]);
-      setSources(d.sources || []);
-      setStats(s);
+    setError(null);
+    try {
+      await refreshSources();
+    } catch (err) {
+      setError(err.message);
       setRefreshing(false);
+      return;
+    }
+    setTimeout(async () => {
+      try {
+        const [d, s] = await Promise.all([loadSources(), loadStats()]);
+        setSources(d.sources || []);
+        setStats(s);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setRefreshing(false);
+      }
     }, 2000);
   }
 
@@ -271,6 +297,8 @@ function SourcesTab({ t }) {
 
   return (
     <div className="admin-body admin-sources-body">
+      {error && <div className="auth-error" style={{ marginBottom: "16px" }}>{error}</div>}
+
       {/* Stats strip */}
       <div className="admin-stat-bar" style={{ flexWrap: "wrap", gap: "16px" }}>
         <div className="admin-sources-stat">
