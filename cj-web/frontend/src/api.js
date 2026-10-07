@@ -178,34 +178,29 @@ export async function renameSession(sessionId, title) {
 // ── Sources endpoints ─────────────────────────────────────────────────────────
 
 export async function loadSources() {
-  try {
-    const res = await fetchWithTimeout(`${BASE}/sources`);
-    if (!res.ok) return { sources: [] };
-    return res.json();
-  } catch {
-    return { sources: [] };
-  }
+  const res = await authFetch("/sources");
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
+  return res.json();
 }
 
 export async function addSource(name, url, type = "rss") {
-  const res = await fetchWithTimeout(`${BASE}/sources`, {
+  const res = await authFetch("/sources", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, url, type }),
   });
-  if (!res.ok) {
-    const detail = await res.json().catch(() => ({}));
-    throw new Error(detail?.detail ?? `Failed to add source (${res.status})`);
-  }
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
   return res.json();
 }
 
 export async function deleteSource(id) {
-  await fetchWithTimeout(`${BASE}/sources/${id}`, { method: "DELETE" });
+  const res = await authFetch(`/sources/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
 }
 
 export async function refreshSources() {
-  const res = await fetchWithTimeout(`${BASE}/sources/refresh`, { method: "POST" });
+  const res = await authFetch("/sources/refresh", { method: "POST" });
+  if (!res.ok) throw new Error(await parseErrorDetail(res));
   return res.json();
 }
 
@@ -213,7 +208,7 @@ export async function refreshSources() {
 
 export async function loadStats() {
   try {
-    const res = await fetchWithTimeout(`${BASE}/admin/stats`);
+    const res = await authFetch("/admin/stats");
     if (!res.ok) return {};
     return res.json();
   } catch {

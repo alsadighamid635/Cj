@@ -22,9 +22,9 @@ Two workflows must both be running:
 
 The frontend proxies API calls to the backend. Open the app on port **5173**.
 
-## Required secrets
+## Backend secrets and environment variables
 
-All set as Replit Secrets:
+Configure the backend values in its environment:
 
 | Secret | Purpose |
 |---|---|
@@ -32,6 +32,9 @@ All set as Replit Secrets:
 | `GROQ_API_KEY` | Groq LLM (llama-3.3-70b-versatile) |
 | `QDRANT_URL` | Qdrant Cloud cluster URL |
 | `QDRANT_API_KEY` | Qdrant Cloud API key |
+| `ADMIN_PASSWORD` | Password for the automatically created administrator account; needed to enable admin access |
+| `ADMIN_USERNAME` | Optional reserved administrator username (default: `249shadow`) |
+| `CORS_ORIGINS` | Optional comma-separated list of exact allowed browser origins |
 
 ## Tech stack
 
@@ -44,7 +47,9 @@ All set as Replit Secrets:
 
 ## Admin
 
-Default admin username: `249shadow` (override with `ADMIN_USERNAME` secret). Admin endpoints are at `/api/admin/`.
+Default admin username: `249shadow` (override with `ADMIN_USERNAME`). Set `ADMIN_PASSWORD` to create the administrator account on startup; public sign-up cannot claim the reserved admin username. Admin and learning-source management endpoints require that account.
+
+`CORS_ORIGINS` accepts exact `http://` or `https://` origins separated by commas (no paths or wildcards). If unset, it allows the documented Vercel frontend domains and local Vite development at `http://localhost:5173`.
 
 ## Production deployment
 
@@ -54,7 +59,7 @@ Default admin username: `249shadow` (override with `ADMIN_USERNAME` secret). Adm
 | Backend | Render | https://cj-ww1u.onrender.com |
 
 - `VITE_API_URL` is set on Vercel pointing to the Render backend
-- All 4 backend secrets are set in Render (SESSION_SECRET, GROQ_API_KEY, QDRANT_URL, QDRANT_API_KEY)
+- Backend secrets are set in Render (SESSION_SECRET, GROQ_API_KEY, QDRANT_URL, QDRANT_API_KEY, and ADMIN_PASSWORD); set `CORS_ORIGINS` there if the frontend is hosted on a different origin.
 - Frontend uses `yarn` as package manager on Vercel (npm has a bug on Vercel's build environment)
 - Auto-deploy on both platforms triggers from pushes to the `main` branch on GitHub
 

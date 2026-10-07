@@ -11,9 +11,6 @@ import {
   fetchMe, getToken, clearToken, AuthError,
 } from "./api.js";
 
-// Admin username — must match config.ADMIN_USERNAME on the backend
-const ADMIN_USERNAME = "249shadow";
-
 function getOrCreateSessionId() {
   const KEY = "cj_session_id";
   let id = sessionStorage.getItem(KEY);
@@ -40,13 +37,14 @@ export default function App() {
   const [showAdmin, setShowAdmin]     = useState(false);
   const [stats, setStats]             = useState({});
 
-  const isAdmin = user && user.username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
+  const isAdmin = Boolean(user?.is_admin);
 
   const logout = useCallback(() => {
     clearToken();
     setUser(null);
     setMessages([]);
     setSessions([]);
+    setStats({});
     setShowAdmin(false);
   }, []);
 
@@ -73,7 +71,8 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     loadSessions().then(d => setSessions(d.sessions || []));
-    loadStats().then(setStats);
+    if (user.is_admin) loadStats().then(setStats);
+    else setStats({});
   }, [user]);
 
   async function handleSend(text, attachment = null) {
