@@ -11,14 +11,19 @@ Endpoints:
 
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel, Field, field_validator
 
+from api.auth import require_admin
 from utils.logger import get_logger
 
 logger = get_logger()
 
-router = APIRouter(prefix="/api/sources", tags=["sources"])
+router = APIRouter(
+    prefix="/api/sources",
+    tags=["sources"],
+    dependencies=[Depends(require_admin)],
+)
 
 _db = None
 _scraper = None
